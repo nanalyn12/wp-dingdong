@@ -32,6 +32,18 @@ if ( $dd_purge_content ) {
             wp_delete_post( $dd_id, true );
         }
     }
+
+    // 복원 전 자동 백업본도 콘텐츠 사본이므로 함께 정리한다.
+    $dd_uploads = wp_upload_dir();
+    if ( empty( $dd_uploads['error'] ) ) {
+        $dd_backup_dir = trailingslashit( $dd_uploads['basedir'] ) . 'dingdong-lms/backups';
+        foreach ( (array) glob( $dd_backup_dir . '/*' ) as $dd_file ) {
+            if ( is_file( $dd_file ) ) {
+                @unlink( $dd_file );
+            }
+        }
+        @rmdir( $dd_backup_dir );
+    }
 }
 
 // 랜딩페이지 — 플러그인이 만든 빈 페이지이므로 콘텐츠 보존 여부와 무관하게 정리한다.

@@ -120,8 +120,30 @@ if ( ! function_exists( 'sanitize_title' ) ) {
 }
 
 if ( ! function_exists( 'wp_kses_post' ) ) {
+	/**
+	 * WordPress wp_kses_post 의 근사 구현.
+	 *
+	 * 본문에서 흔히 쓰는 태그만 남기고 나머지(특히 <script>)는 제거한다.
+	 * 정확한 kses 는 아니지만, "허용 태그는 보존하고 스크립트는 없앤다"는
+	 * 성질을 검증하는 데는 충분하다. 실제 필터링은 WordPress 가 담당한다.
+	 */
 	function wp_kses_post( $data ) {
-		return (string) $data;
+		$allowed = '<a><b><strong><i><em><u><s><br><p><span><div><ul><ol><li>'
+			. '<h1><h2><h3><h4><h5><h6><blockquote><code><pre><img><table><thead>'
+			. '<tbody><tr><th><td><hr><small><sup><sub><figure><figcaption>';
+		return strip_tags( (string) $data, $allowed );
+	}
+}
+
+if ( ! function_exists( 'sanitize_textarea_field' ) ) {
+	function sanitize_textarea_field( $str ) {
+		return trim( strip_tags( (string) $str ) );
+	}
+}
+
+if ( ! function_exists( 'sanitize_key' ) ) {
+	function sanitize_key( $key ) {
+		return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) $key ) );
 	}
 }
 
@@ -132,6 +154,52 @@ if ( ! function_exists( 'wp_strip_all_tags' ) ) {
 			$string = preg_replace( '/[\r\n\t ]+/', ' ', $string );
 		}
 		return trim( $string );
+	}
+}
+
+/* =============================================================
+   WP_Error
+   ============================================================= */
+
+if ( ! class_exists( 'WP_Error' ) ) {
+	class WP_Error {
+		public $errors = array();
+		public $error_data = array();
+
+		public function __construct( $code = '', $message = '', $data = '' ) {
+			if ( $code === '' ) {
+				return;
+			}
+			$this->errors[ $code ][] = $message;
+			if ( $data !== '' ) {
+				$this->error_data[ $code ] = $data;
+			}
+		}
+
+		public function get_error_code() {
+			$codes = array_keys( $this->errors );
+			return empty( $codes ) ? '' : $codes[0];
+		}
+
+		public function get_error_message( $code = '' ) {
+			if ( $code === '' ) {
+				$code = $this->get_error_code();
+			}
+			return isset( $this->errors[ $code ][0] ) ? $this->errors[ $code ][0] : '';
+		}
+
+		public function get_error_data( $code = '' ) {
+			if ( $code === '' ) {
+				$code = $this->get_error_code();
+			}
+			return isset( $this->error_data[ $code ] ) ? $this->error_data[ $code ] : null;
+		}
+	}
+}
+
+if ( ! function_exists( 'is_wp_error' ) ) {
+	function is_wp_error( $thing ) {
+		return $thing instanceof WP_Error;
 	}
 }
 

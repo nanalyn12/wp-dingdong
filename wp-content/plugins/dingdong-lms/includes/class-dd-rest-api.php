@@ -216,6 +216,25 @@ class DD_Rest_API {
             'permission_callback' => $admin,
         ) );
 
+        // 데이터 백업 / 복원 (관리자 전용)
+        register_rest_route( $ns, '/backup/info', array(
+            'methods'             => 'GET',
+            'callback'            => array( __CLASS__, 'backup_info' ),
+            'permission_callback' => $admin,
+        ) );
+
+        register_rest_route( $ns, '/backup/export', array(
+            'methods'             => 'GET',
+            'callback'            => array( __CLASS__, 'backup_export' ),
+            'permission_callback' => $admin,
+        ) );
+
+        register_rest_route( $ns, '/backup/import', array(
+            'methods'             => 'POST',
+            'callback'            => array( __CLASS__, 'backup_import' ),
+            'permission_callback' => $admin,
+        ) );
+
         // 공개 API (인증 불필요)
         register_rest_route( $ns, '/public/newsletters', array(
             'methods'             => 'GET',
@@ -1403,6 +1422,188 @@ class DD_Rest_API {
             'public_url'    => ! empty( $token ) ? home_url( '/newsletter/' . $token . '/' ) : '',
             'created'       => $post->post_date,
         );
+    }
+
+    // --- 데이터 백업 / 복원 ---
+
+    /**
+     * 설정 화면에서 "무엇이 백업되는지" 미리 보여 주기 위한 요약.
+     */
+    public static function backup_info() {
+        $counts = DD_Backup::counts();
+
+        $media = DD_Backup::media_summary();
+
+        return rest_ensure_response( array(
+            'counts'         => $counts,
+            'total'          => array_sum( $counts ),
+            'plugin_version' => DD_LMS_VERSION,
+            'format_version' => DD_Backup::FORMAT_VERSION,
+            'filename'       => DD_Backup::filename( current_time( 'timestamp' ) ),
+            'media'          => array(
+                'count'      => $media['count'],
+                'bytes'      => $media['bytes'],
+                'human'      => size_format( $media['bytes'] ),
+                'zip_ready'  => class_exists( 'ZipArchive' ),
+            ),
+            'upload_limit'   => array(
+                'bytes' => wp_max_upload_size(),
+                'human' => size_format( wp_max_upload_size() ),
+            ),
+        ) );
+    }
+
+    /**
+     * 백업 데이터를 응답 본문으로 내려보낸다.
+     *
+     * ⚠️ 서버에 파일을 만들지 않는다. 브라우저가 받은 JSON 을 Blob 으로 저장하므로
+     *    uploads 폴더에 백업 파일이 남아 유출될 여지가 없다.
+     */
+    public static function backup_export() {
+        @set_time_limit( 300 );
+
+        return rest_ensure_response( array(
+            'filename' => DD_Backup::filename( current_time( 'timestamp' ) ),
+            'backup'   => DD_Backup::export(),
+        ) );
+    }
+
+    /**
+     * 업로드한 백업 파일로 데이터를 복원한다.
+     *
+     * 검증 순서: nonce → 업로드 오류/확장자/크기 → JSON 유효성 → 백업 포맷 →
+     * (선택) 현재 데이터 자동 백업 → 복원.
+     */
+    public static function backup_import( $request ) {
+        @set_time_limit( 300 );
+
+        // 권한은 permission_callback 이 이미 확인했다.
+        // 되돌리기 어려운 작업이므로 전용 nonce 로 CSRF 를 한 번 더 막는다.
+        $nonce = $request->get_param( '_dd_nonce' );
+        if ( ! $nonce || ! wp_verify_nonce( $nonce, 'dd_backup' ) ) {
+            return new WP_Error(
+                'dd_backup_bad_nonce',
+                '보안 검증에 실패했습니다. 페이지를 새로고침한 뒤 다시 시도하세요.',
+                array( 'status' => 403 )
+            );
+        }
+
+        $restore_media = $request->get_param( 'restore_media' );
+        $restore_media = ( $restore_media === null ) ? true : rest_sanitize_boolean( $restore_media );
+
+        $data        = null;
+        $media_stats = null;
+        $files       = $request->get_file_params();
+
+        if ( ! empty( $files['file'] ) && is_array( $files['file'] ) ) {
+            $file = $files['file'];
+
+            if ( ! empty( $file['error'] ) ) {
+                return new WP_Error(
+                    'dd_backup_upload_error',
+                    '파일 업로드에 실패했습니다 (오류 코드 ' . (int) $file['error'] . ').',
+                    array( 'status' => 400 )
+                );
+            }
+
+            $ext = strtolower( pathinfo( (string) $file['name'], PATHINFO_EXTENSION ) );
+            if ( ! in_array( $ext, array( 'json', 'zip' ), true ) ) {
+                return new WP_Error(
+                    'dd_backup_bad_extension',
+                    '.json 또는 .zip 백업 파일만 업로드할 수 있습니다.',
+                    array( 'status' => 400 )
+                );
+            }
+
+            // JSON 은 통째로 메모리에 올리므로 상한을 두고, ZIP 은 디스크에서 읽으므로 서버 업로드 한도를 따른다.
+            if ( $ext === 'json' && (int) $file['size'] > DD_Backup::MAX_BYTES ) {
+                return new WP_Error(
+                    'dd_backup_too_large',
+                    '백업 파일이 너무 큽니다 (최대 ' . size_format( DD_Backup::MAX_BYTES ) . ').',
+                    array( 'status' => 413 )
+                );
+            }
+
+            if ( empty( $file['tmp_name'] ) || ! is_uploaded_file( $file['tmp_name'] ) ) {
+                return new WP_Error(
+                    'dd_backup_upload_error',
+                    '업로드된 파일을 읽을 수 없습니다.',
+                    array( 'status' => 400 )
+                );
+            }
+
+            if ( $ext === 'zip' ) {
+                $archive = DD_Backup::read_archive( $file['tmp_name'], $restore_media );
+                @unlink( $file['tmp_name'] );
+
+                if ( is_wp_error( $archive ) ) {
+                    return $archive;
+                }
+
+                $data        = $archive['data'];
+                $media_stats = $archive['media'];
+            } else {
+                $raw = file_get_contents( $file['tmp_name'] );
+
+                // 업로드 임시 파일을 서버에 남기지 않는다.
+                @unlink( $file['tmp_name'] );
+
+                $data = DD_Backup::decode( $raw );
+            }
+        } else {
+            // FormData 업로드가 막히는 환경(Playground 등)을 위한 대체 경로. JSON 전용이다.
+            $data = DD_Backup::decode( (string) $request->get_param( 'payload' ) );
+        }
+
+        if ( is_wp_error( $data ) ) {
+            return $data;
+        }
+
+        $valid = DD_Backup::validate( $data );
+        if ( is_wp_error( $valid ) ) {
+            return $valid;
+        }
+
+        $mode = sanitize_key( (string) $request->get_param( 'mode' ) );
+        if ( ! in_array( $mode, array( 'skip', 'replace', 'duplicate' ), true ) ) {
+            $mode = 'skip';
+        }
+
+        $restore_options = $request->get_param( 'restore_options' );
+        $restore_options = ( $restore_options === null ) ? true : rest_sanitize_boolean( $restore_options );
+
+        $want_safety = $request->get_param( 'safety_backup' );
+        $want_safety = ( $want_safety === null ) ? true : rest_sanitize_boolean( $want_safety );
+
+        $safety_note = '';
+        if ( $want_safety ) {
+            $safety = DD_Backup::write_safety_backup();
+            if ( is_wp_error( $safety ) ) {
+                // 안전장치 실패가 복원 자체를 막지는 않는다 — 대신 분명히 알린다.
+                $safety_note = '⚠️ 복원 전 자동 백업에 실패했습니다: ' . $safety->get_error_message();
+            } else {
+                $safety_note = '복원 전 현재 데이터를 자동 백업했습니다: ' . $safety['file'];
+            }
+        }
+
+        $report = DD_Backup::import( $data, array(
+            'mode'            => $mode,
+            'restore_options' => $restore_options,
+        ) );
+
+        if ( is_wp_error( $report ) ) {
+            return $report;
+        }
+
+        $report['safety_backup'] = $safety_note;
+        $report['media']         = $media_stats;
+        $report['source']        = array(
+            'generated_at'   => isset( $data['generated_at'] ) ? sanitize_text_field( (string) $data['generated_at'] ) : '',
+            'plugin_version' => isset( $data['plugin_version'] ) ? sanitize_text_field( (string) $data['plugin_version'] ) : '',
+            'home_url'       => isset( $data['site']['home_url'] ) ? esc_url_raw( (string) $data['site']['home_url'] ) : '',
+        );
+
+        return rest_ensure_response( $report );
     }
 
     // --- 헬퍼 ---

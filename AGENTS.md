@@ -207,6 +207,40 @@ Claude Code의 `preview_start` / `__*_preview.html` 같은 별도 dev server는 
   Referer·중계 서버 로그에 키를 남기므로 금지.
 - 키가 없으면 해당 기능은 조용히 비활성화된다 (오류를 띄우지 않는다).
 
+### 23. 데이터 백업/복원 (`DD_Backup`) — 비파괴가 기본
+
+설정 화면의 [데이터 백업] / [데이터 복원]. DB 전체가 아니라 **이 플러그인의 데이터만** 다룬다.
+
+- 백업 대상: CPT 4종(`dd_course`/`dd_lesson`/`dd_story`/`dd_newsletter`)의 post + `_dd_` 접두사 메타 + 텀 관계
+  + **허용목록** 옵션(`DD_Backup::OPTION_KEYS`). 커스텀 테이블은 없다.
+- ⚠️ **백업에 절대 넣지 않는 것**: API 키(`SECRET_OPTION_KEYS`)와 공개 공유 토큰(`TOKEN_META_KEYS`).
+  토큰은 복원 시 `wp_generate_uuid4()` 로 새로 발급한다. 새 옵션을 백업에 넣을 때는
+  자격증명이 아닌지 반드시 확인하고 `OPTION_KEYS` 에 **명시적으로** 추가할 것 (거부목록 방식 금지).
+- ⚠️ **ID 재매핑**: 강의는 `_dd_course_id`, 스토리는 `_dd_story_course_id` 로 강좌 post ID 를 참조한다.
+  포스트마다 영구 UID(`_dd_backup_uid`)를 부여해 두고, 복원 시 uid → 새 ID 로 다시 잇는다.
+  **참조 메타를 새로 추가하면 `REF_META_KEYS` 에도 넣어야 한다.** 안 넣으면 복원 후 남의 포스트를 가리킨다.
+- 복원 기본 동작은 `skip` — 같은 uid 가 이미 있으면 건너뛴다. 어떤 모드에서도 백업에 없는 기존 콘텐츠는 삭제하지 않는다.
+- 백업 파일은 서버에 남기지 않는다 (JSON 은 REST 응답 본문 → 브라우저 Blob 저장, ZIP 은 전송 직후 `unlink`).
+  복원 전 자동 안전 백업만 `uploads/dingdong-lms/backups/` 에 무작위 접미사 파일명으로 저장하고 최근 5개만 유지한다.
+
+**백업 형식은 2가지다.**
+
+| | JSON | ZIP |
+|---|---|---|
+| 내용 | 콘텐츠 + 설정 | JSON + `uploads/dingdong-lms/` 이미지 파일 |
+| 크기 | ~0.5MB | 이미지 용량만큼 (현재 사이트 기준 147MB) |
+| 전송 | REST `GET /backup/export` → JS Blob | `admin-post.php?action=dd_backup_archive` **브라우저 기본 다운로드** |
+| 복원 | REST `POST /backup/import` (.json) | 같은 엔드포인트 (.zip 분기) |
+
+- **ZIP 을 REST + JS Blob 으로 만들지 말 것.** 147MB 를 JS 문자열/Blob 으로 들면 탭이 죽는다.
+  그래서 `admin-post` 로 `readfile()` 스트리밍한다 (`ob_end_clean()` 으로 버퍼를 비운 뒤).
+- ⚠️ **ZIP 해제는 zip slip 방어가 전부다.** `DD_Backup::safe_archive_path()` 만 통과한 항목을 푼다:
+  `uploads/` 접두사 필수 + `..`·절대경로·역슬래시·널바이트 거부 + 확장자 **허용목록**(`MEDIA_EXTENSIONS`).
+  거부목록으로 바꾸면 `a.png.php`·`.phtml` 이 빠져나가 업로드 폴더에서 코드 실행이 된다. SVG 도 제외한다.
+- 기존 이미지는 **덮어쓰지 않는다** (같은 이름이 있으면 skip). 백업 폴더(`backups/`)는 ZIP 에 담지 않는다.
+- ⚠️ 공유호스팅은 `upload_max_filesize` 가 보통 8~128MB 라 대용량 ZIP 복원이 막힐 수 있다.
+  설정 화면이 예상 ZIP 용량과 서버 업로드 한도를 함께 표시하니 그 안내를 지울 것.
+
 ## 주요 파일 참조
 
 | 파일 | 역할 |
@@ -219,6 +253,7 @@ Claude Code의 `preview_start` / `__*_preview.html` 같은 별도 dev server는 
 | `includes/class-dd-newsletter-generator.php` | 뉴스레터 Gemini 프롬프트 + 이미지 생성 + CPT |
 | `includes/class-dd-youtube-subtitles.php` | YouTube 자막 추출 엔진 (중국어 노래 학습 전용): Innertube 멀티클라이언트 7단계 (iOS→ANDROID_VR→TVHTML5→WEB→ANDROID→timedtext→watch페이지), 429 백오프, 7일 transient 캐싱, RD믹스 단일영상 처리, **번체→간체 통일**(`simplify_subtitle_result`), **PO token 차단 진단**(`blocked`) |
 | `includes/class-dd-gemini.php` | Gemini 통신 래퍼: 모델 체인 fallback + `throttle()` 요청 간 2~3초 간격 (`dd_gemini_last_call` 옵션, 429 완화) |
+| `includes/class-dd-backup.php` | 데이터 백업/복원: CPT 4종 + `_dd_` 메타 + 허용목록 옵션만 JSON 으로 export/import, 포스트 영구 UID(`_dd_backup_uid`) 기반 ID 재매핑·중복 판정, 업로드 URL 재작성, 복원 전 자동 안전 백업, **ZIP 아카이브**(`write_archive`/`read_archive` + `safe_archive_path` zip slip 방어, `admin-post` 스트리밍 다운로드) (규칙 23) |
 | `includes/class-dd-chinese.php` | 번체→간체 변환기: `to_simplified()`/`has_traditional()`/`convert_deep()`, Gemini용 `PROMPT_RULE` 상수, mbstring 비의존(`preg_split('//u')`), 확장 가능한 `$pairs` 매핑표 |
 | `tools/youtube-transcript-bookmarklet.html` | 유튜브 자막 긁기 북마클릿 설치 페이지 — 브라우저 페이지 내 실행으로 429·CORS·PO token 우회, [스크립트 표시] 패널 파싱 → 클립보드 복사 → 수동 입력 |
 | `public/templates/lesson-public.php` | 강의 5탭 (9섹션 사이드바), 작문 연습, 학습 자료 뷰어, 만화 그리드, PDF 인라인, 글라스모피즘 |

@@ -39,6 +39,7 @@ require_once DD_LMS_PATH . 'includes/class-dd-story-generator.php';
 require_once DD_LMS_PATH . 'includes/class-dd-newsletter-generator.php';
 require_once DD_LMS_PATH . 'includes/class-dd-youtube-subtitles.php';
 require_once DD_LMS_PATH . 'includes/class-dd-song-course-generator.php';
+require_once DD_LMS_PATH . 'includes/class-dd-backup.php';
 require_once DD_LMS_PATH . 'includes/class-dd-setup.php';
 
 function dd_lms_activate() {

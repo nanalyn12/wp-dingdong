@@ -1295,6 +1295,13 @@
     gap: 0.5rem;
 }
 
+/* 백업 파일 선택 input — 기존 .dd-input 과 높이를 맞춘다 */
+input[type="file"].dd-input {
+    padding: 0.5rem 0.65rem;
+    line-height: 1.6;
+    cursor: pointer;
+}
+
 .dd-check {
     display: flex !important;
     align-items: center;

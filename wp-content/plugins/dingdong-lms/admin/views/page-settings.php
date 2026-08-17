@@ -169,6 +169,102 @@ if ( ! defined( 'ABSPATH' ) ) {
         </div>
     </div>
 
+    <!-- 데이터 백업 -->
+    <div class="dd-card dd-mt-2">
+        <div class="dd-card-header">
+            <h2><?php echo esc_html( '데이터 백업' ); ?></h2>
+            <div class="dd-status-indicator" id="dd-backup-status">
+                <span class="dd-status-dot"></span>
+                <span class="dd-status-text"><?php echo esc_html( '확인 중...' ); ?></span>
+            </div>
+        </div>
+        <div class="dd-card-body">
+            <p class="dd-mb-2">
+                <?php echo esc_html( '플러그인에서 생성한 강의 콘텐츠 및 설정 데이터를 JSON 파일로 다운로드합니다.' ); ?>
+            </p>
+
+            <div class="dd-info-box dd-mb-2">
+                <strong><?php echo esc_html( '백업에 포함되는 것' ); ?></strong><br>
+                <?php echo esc_html( '강좌 · 강의 · 인터랙티브 스토리 · 뉴스레터의 본문과 슬라이드/퀴즈/대화/만화/가사 등 모든 학습 데이터, 그리고 플러그인 설정값입니다.' ); ?><br><br>
+                <strong><?php echo esc_html( '포함되지 않는 것 (보안)' ); ?></strong><br>
+                <?php echo esc_html( 'Gemini · YouTube · Pixabay API 키와 공개 공유 토큰은 백업 파일에 저장되지 않습니다. 이미지 파일 자체도 포함되지 않으므로, 다른 사이트로 옮길 때는 wp-content/uploads/dingdong-lms/ 폴더를 함께 복사하세요.' ); ?>
+            </div>
+
+            <div class="dd-flex dd-gap-1">
+                <button type="button" class="dd-btn dd-btn-primary" id="dd-btn-backup-download">
+                    <?php echo esc_html( '데이터 백업 (JSON)' ); ?>
+                </button>
+                <a class="dd-btn dd-btn-secondary" id="dd-btn-backup-archive"
+                   href="<?php echo esc_url( wp_nonce_url(
+                       admin_url( 'admin-post.php?action=dd_backup_archive' ),
+                       'dd_backup_archive'
+                   ) ); ?>">
+                    <?php echo esc_html( '전체 백업 (ZIP · 이미지 포함)' ); ?>
+                </a>
+            </div>
+
+            <p class="dd-help-text dd-mt-2" id="dd-backup-archive-note">
+                <?php echo esc_html( 'JSON 백업은 콘텐츠와 설정만 담아 가볍고, 다른 사이트로 옮기기 쉽습니다. ZIP 백업은 여기에 이미지 파일까지 함께 담습니다.' ); ?>
+            </p>
+        </div>
+    </div>
+
+    <!-- 데이터 복원 -->
+    <div class="dd-card dd-mt-2">
+        <div class="dd-card-header">
+            <h2><?php echo esc_html( '데이터 복원' ); ?></h2>
+        </div>
+        <div class="dd-card-body">
+            <p class="dd-mb-2">
+                <?php echo esc_html( '기존에 백업한 JSON 파일을 업로드하여 데이터를 복원합니다.' ); ?>
+            </p>
+
+            <div class="dd-form-group">
+                <label for="dd-restore-file"><?php echo esc_html( '백업 파일 (.json 또는 .zip)' ); ?></label>
+                <input type="file" id="dd-restore-file" class="dd-input" accept="application/json,.json,application/zip,.zip">
+                <span class="dd-help-text">
+                    <?php echo esc_html( '이 플러그인의 [데이터 백업]으로 만든 파일만 복원할 수 있습니다.' ); ?>
+                    <span id="dd-restore-limit"></span>
+                </span>
+            </div>
+
+            <div class="dd-form-group">
+                <label for="dd-restore-mode"><?php echo esc_html( '중복 처리 방식' ); ?></label>
+                <select id="dd-restore-mode" class="dd-input">
+                    <option value="skip"><?php echo esc_html( '이미 있는 콘텐츠는 건너뛰기 (권장 · 기존 데이터 보존)' ); ?></option>
+                    <option value="replace"><?php echo esc_html( '이미 있는 콘텐츠를 백업 내용으로 덮어쓰기' ); ?></option>
+                    <option value="duplicate"><?php echo esc_html( '항상 새로 추가 (사본이 생깁니다)' ); ?></option>
+                </select>
+                <span class="dd-help-text">
+                    <?php echo esc_html( '동일 콘텐츠 판단은 백업에 기록된 고유 식별자로 합니다. 어떤 방식이든 백업에 없는 기존 콘텐츠는 삭제되지 않습니다.' ); ?>
+                </span>
+            </div>
+
+            <label class="dd-check">
+                <input type="checkbox" id="dd-restore-safety" checked>
+                <span><?php echo esc_html( '복원 전에 현재 데이터를 서버에 자동 백업 (권장)' ); ?></span>
+            </label>
+
+            <label class="dd-check dd-mt-1">
+                <input type="checkbox" id="dd-restore-options" checked>
+                <span><?php echo esc_html( '플러그인 설정값도 함께 복원' ); ?></span>
+            </label>
+
+            <label class="dd-check dd-mt-1">
+                <input type="checkbox" id="dd-restore-media" checked>
+                <span><?php echo esc_html( 'ZIP 안의 이미지 파일도 복원 (JSON 백업에는 해당 없음)' ); ?></span>
+            </label>
+
+            <div class="dd-mt-2">
+                <button type="button" class="dd-btn dd-btn-primary" id="dd-btn-restore">
+                    <?php echo esc_html( '데이터 복원' ); ?>
+                </button>
+            </div>
+
+            <div id="dd-restore-result" class="dd-mt-2 dd-hidden"></div>
+        </div>
+    </div>
+
     <!-- 플러그인 삭제 시 데이터 처리 -->
     <div class="dd-card dd-mt-2">
         <div class="dd-card-header">

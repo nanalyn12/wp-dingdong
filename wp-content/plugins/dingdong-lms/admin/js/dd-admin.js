@@ -1126,6 +1126,234 @@
                 // 기본값 사용
             }
         }
+
+        // ===== 데이터 백업 / 복원 =====
+
+        initBackup();
+
+        function initBackup() {
+            loadBackupInfo();
+
+            const btnDownload = document.getElementById('dd-btn-backup-download');
+            if (btnDownload) btnDownload.addEventListener('click', downloadBackup);
+
+            const btnRestore = document.getElementById('dd-btn-restore');
+            if (btnRestore) btnRestore.addEventListener('click', restoreBackup);
+        }
+
+        /** 백업하면 몇 건이 담기는지 미리 보여 준다. */
+        async function loadBackupInfo() {
+            const statusEl = document.getElementById('dd-backup-status');
+            if (!statusEl) return;
+
+            try {
+                const info = await apiFetch({ path: API_BASE + '/backup/info' });
+                const c = (info && info.counts) || {};
+                const label = `강좌 ${c.dd_course || 0} · 강의 ${c.dd_lesson || 0} · `
+                            + `스토리 ${c.dd_story || 0} · 뉴스레터 ${c.dd_newsletter || 0}`;
+                statusEl.className = 'dd-status-indicator '
+                    + ((info && info.total > 0) ? 'dd-status-active' : 'dd-status-inactive');
+                statusEl.querySelector('.dd-status-text').textContent = label;
+
+                renderArchiveNote(info);
+                renderUploadLimit(info);
+            } catch (err) {
+                statusEl.className = 'dd-status-indicator dd-status-inactive';
+                statusEl.querySelector('.dd-status-text').textContent = '확인 불가';
+            }
+        }
+
+        /** ZIP 버튼 옆에 예상 용량을 보여 준다 — 147MB 를 모르고 누르지 않도록. */
+        function renderArchiveNote(info) {
+            const note = document.getElementById('dd-backup-archive-note');
+            const link = document.getElementById('dd-btn-backup-archive');
+            const media = (info && info.media) || {};
+
+            if (link && media.zip_ready === false) {
+                link.classList.add('dd-hidden');
+                if (note) {
+                    note.textContent = '이 서버에는 ZIP 확장(ZipArchive)이 없어 전체 백업을 만들 수 없습니다. JSON 백업을 사용하세요.';
+                }
+                return;
+            }
+
+            if (!note) return;
+            note.textContent =
+                'JSON 백업은 콘텐츠와 설정만 담아 가볍고, 다른 사이트로 옮기기 쉽습니다. '
+                + `ZIP 백업은 여기에 이미지 ${media.count || 0}개(약 ${media.human || '0 B'})를 함께 담습니다.`
+                + (info.upload_limit && media.bytes > info.upload_limit.bytes
+                    ? ` ⚠️ 이 서버의 업로드 한도(${info.upload_limit.human})보다 커서, 만든 ZIP 을 이 사이트에 그대로 복원하지 못할 수 있습니다.`
+                    : '');
+        }
+
+        function renderUploadLimit(info) {
+            const el = document.getElementById('dd-restore-limit');
+            if (el && info && info.upload_limit) {
+                el.textContent = ` 업로드 가능한 최대 크기: ${info.upload_limit.human}.`;
+            }
+        }
+
+        /**
+         * 백업 JSON 을 받아 브라우저에서 파일로 저장한다.
+         * 서버에 파일을 만들지 않으므로 백업본이 uploads 에 남지 않는다.
+         */
+        async function downloadBackup() {
+            const btn = document.getElementById('dd-btn-backup-download');
+            const original = btn ? btn.textContent : '';
+            if (btn) { btn.disabled = true; btn.textContent = '백업 준비 중...'; }
+
+            try {
+                const res = await apiFetch({ path: API_BASE + '/backup/export' });
+                if (!res || !res.backup) throw new Error('백업 데이터를 받지 못했습니다.');
+
+                const json = JSON.stringify(res.backup, null, 2);
+                const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = res.filename || 'dingdong-lms-backup.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+                const total = (res.backup.counts && res.backup.counts.posts) || 0;
+                showAlert('dd-settings-alert-container', 'success',
+                    `백업 성공 — 콘텐츠 ${total}건을 ${res.filename} 파일로 저장했습니다.`);
+            } catch (err) {
+                showAlert('dd-settings-alert-container', 'error', '백업 실패: ' + describeError(err));
+            }
+
+            if (btn) { btn.disabled = false; btn.textContent = original; }
+        }
+
+        async function restoreBackup() {
+            const input = document.getElementById('dd-restore-file');
+            const file = input && input.files && input.files[0];
+
+            if (!file) {
+                showAlert('dd-settings-alert-container', 'error', '복원할 백업 파일을 선택하세요.');
+                return;
+            }
+            const isZip = /\.zip$/i.test(file.name);
+            if (!isZip && !/\.json$/i.test(file.name)) {
+                showAlert('dd-settings-alert-container', 'error',
+                    '파일 형식이 잘못되었습니다. .json 또는 .zip 백업 파일을 선택하세요.');
+                return;
+            }
+
+            if (!confirm('백업 데이터를 복원하면 기존 데이터와 중복될 수 있습니다. 계속하시겠습니까?')) {
+                return;
+            }
+
+            const mode = (document.getElementById('dd-restore-mode') || {}).value || 'skip';
+            if (mode === 'replace' && !confirm(
+                '덮어쓰기 모드입니다.\n같은 콘텐츠가 이미 있으면 백업 내용으로 교체되며 현재 내용은 사라집니다.\n\n계속하시겠습니까?'
+            )) {
+                return;
+            }
+
+            const safety = !!(document.getElementById('dd-restore-safety') || {}).checked;
+            const withOptions = !!(document.getElementById('dd-restore-options') || {}).checked;
+            const withMedia = !!(document.getElementById('dd-restore-media') || {}).checked;
+
+            const btn = document.getElementById('dd-btn-restore');
+            const original = btn ? btn.textContent : '';
+            if (btn) { btn.disabled = true; btn.textContent = '복원 중...'; }
+
+            try {
+                const form = new FormData();
+                form.append('file', file);
+                form.append('_dd_nonce', (window.ddLms && window.ddLms.backupNonce) || '');
+                form.append('mode', mode);
+                form.append('safety_backup', safety ? '1' : '0');
+                form.append('restore_options', withOptions ? '1' : '0');
+                form.append('restore_media', withMedia ? '1' : '0');
+
+                let report;
+                try {
+                    report = await apiFetch({ path: API_BASE + '/backup/import', method: 'POST', body: form });
+                } catch (uploadErr) {
+                    // Playground 등에서 multipart 업로드가 막히면 본문을 직접 보낸다.
+                    // ZIP 은 텍스트로 보낼 수 없으므로 JSON 백업일 때만 시도한다.
+                    if (!isZip && uploadErr && /upload|no_file|multipart|empty/i.test(uploadErr.code || '')) {
+                        const text = await file.text();
+                        report = await apiFetch({
+                            path: API_BASE + '/backup/import',
+                            method: 'POST',
+                            data: {
+                                payload: text,
+                                _dd_nonce: (window.ddLms && window.ddLms.backupNonce) || '',
+                                mode: mode,
+                                safety_backup: safety ? '1' : '0',
+                                restore_options: withOptions ? '1' : '0'
+                            }
+                        });
+                    } else {
+                        throw uploadErr;
+                    }
+                }
+
+                renderRestoreReport(report);
+
+                if (report.failed > 0) {
+                    showAlert('dd-settings-alert-container', 'warning',
+                        `일부 데이터 복원 실패 — 성공 ${report.created + report.updated}건 / 실패 ${report.failed}건`);
+                } else {
+                    showAlert('dd-settings-alert-container', 'success',
+                        `복원 성공 — 새로 추가 ${report.created}건 / 덮어씀 ${report.updated}건 / 건너뜀 ${report.skipped}건`);
+                }
+
+                loadBackupInfo();
+            } catch (err) {
+                showAlert('dd-settings-alert-container', 'error', '복원 실패: ' + describeError(err));
+            }
+
+            if (btn) { btn.disabled = false; btn.textContent = original; }
+        }
+
+        function renderRestoreReport(report) {
+            const box = document.getElementById('dd-restore-result');
+            if (!box || !report) return;
+
+            const rows = [
+                ['새로 추가된 콘텐츠', report.created + '건'],
+                ['덮어쓴 콘텐츠', report.updated + '건'],
+                ['중복이라 건너뛴 콘텐츠', report.skipped + '건'],
+                ['복원 실패', report.failed + '건'],
+                ['복원된 설정값', report.options + '개']
+            ];
+
+            if (report.media) {
+                rows.push(['복원된 이미지 파일', report.media.extracted + '개']);
+                if (report.media.skipped) {
+                    rows.push(['이미 있어 건너뛴 이미지', report.media.skipped + '개']);
+                }
+                if (report.media.rejected) {
+                    rows.push(['⚠️ 안전하지 않아 거부한 파일', report.media.rejected + '개']);
+                }
+            }
+
+            let html = '<div class="dd-info-box"><strong>복원 결과</strong><br>'
+                + rows.map((r) => escapeHtml(r[0]) + ': ' + escapeHtml(r[1])).join('<br>');
+
+            if (report.source && report.source.generated_at) {
+                html += '<br><br><strong>백업 파일 정보</strong><br>'
+                    + '생성 시각: ' + escapeHtml(report.source.generated_at) + '<br>'
+                    + '플러그인 버전: ' + escapeHtml(report.source.plugin_version);
+            }
+            if (report.safety_backup) {
+                html += '<br><br>' + escapeHtml(report.safety_backup);
+            }
+            if (report.errors && report.errors.length) {
+                html += '<br><br><strong>실패 항목</strong><br>'
+                    + report.errors.slice(0, 20).map(escapeHtml).join('<br>');
+            }
+            html += '</div>';
+
+            box.innerHTML = html;
+            box.classList.remove('dd-hidden');
+        }
     }
 
     // ===== Generator Page =====

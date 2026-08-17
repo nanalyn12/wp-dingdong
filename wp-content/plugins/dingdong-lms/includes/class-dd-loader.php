@@ -11,6 +11,8 @@ class DD_Loader {
         add_filter( 'query_vars', array( 'DD_Public_Access', 'query_vars' ) );
         add_action( 'admin_menu', array( __CLASS__, 'admin_menu' ) );
         add_action( 'admin_enqueue_scripts', array( __CLASS__, 'admin_assets' ) );
+        // ZIP 전체 백업은 REST 가 아니라 admin-post 로 스트리밍한다 (대용량 대응).
+        add_action( 'admin_post_dd_backup_archive', array( 'DD_Backup', 'handle_archive_download' ) );
         add_action( 'http_api_curl', array( __CLASS__, 'fix_curl_timeout' ), 10, 3 );
     }
 
@@ -156,6 +158,8 @@ class DD_Loader {
             'restUrl' => rest_url( 'dingdong-lms/v1/' ),
             'nonce'   => wp_create_nonce( 'wp_rest' ),
             'siteUrl' => home_url(),
+            // 데이터 복원 전용 nonce — REST 권한 확인에 더해 CSRF 를 한 번 더 막는다.
+            'backupNonce' => wp_create_nonce( 'dd_backup' ),
         ) );
     }
 
