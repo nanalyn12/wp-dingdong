@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dingdong - Design Direction 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-white: #FFFFFF;
+            --color-soft-blush: #FFDBDA;
+            --color-old-rose: #DB7F8E;
+            --color-fairy-floss: #EBCCC5;
+            --color-taupe-grey: #604D53;
+            --color-pale-slate: #D5C5C8;
+            --content-size: 800px;
+            --wide-size: 1280px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: var(--color-white);
+            color: var(--color-taupe-grey);
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--color-pale-slate);
+            padding: 0 2rem;
+        }
+
+        .header-inner {
+            max-width: var(--wide-size);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 72px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .logo-text {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--color-taupe-grey);
+            letter-spacing: -0.02em;
+        }
+
+        .logo-accent {
+            font-family: 'Noto Sans TC', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--color-old-rose);
+            background: var(--color-soft-blush);
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 4px;
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--color-taupe-grey);
+            font-size: 0.9rem;
+            font-weight: 500;
+            position: relative;
+            transition: color 0.3s ease;
+            padding: 0.25rem 0;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--color-old-rose);
+            border-radius: 1px;
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--color-old-rose);
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        /* Hero */
+        .hero {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 55% 45%;
+            align-items: center;
+            max-width: var(--wide-size);
+            margin: 0 auto;
+            padding: 72px 2rem 2rem;
+            position: relative;
+        }
+
+        .hero-text {
+            padding-right: 3rem;
+            animation: slideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--color-soft-blush);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--color-taupe-grey);
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--color-old-rose);
+        }
+
+        .hero-headline {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+            font-size: clamp(2.5rem, 5vw, 3.8rem);
+            font-weight: 800;
+            color: var(--color-taupe-grey);
+            line-height: 1.2;
+            letter-spacing: -0.03em;
+            margin-bottom: 1.25rem;
+        }
+
+        .hero-subtext {
+            font-size: 1.1rem;
+            font-weight: 400;
+            color: var(--color-taupe-grey);
+            opacity: 0.8;
+            line-height: 1.7;
+            margin-bottom: 2.5rem;
+            max-width: 440px;
+        }
+
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--color-old-rose);
+            color: var(--color-white);
+            text-decoration: none;
+            padding: 1rem 2.25rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+            box-shadow: 0 4px 16px rgba(219, 127, 142, 0.3);
+        }
+
+        .hero-cta:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 8px 24px rgba(219, 127, 142, 0.4);
+            background: #c96e7d;
+        }
+
+        .hero-cta-arrow {
+            transition: transform 0.3s ease;
+        }
+
+        .hero-cta:hover .hero-cta-arrow {
+            transform: translateX(3px);
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 2.5rem;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--color-pale-slate);
+        }
+
+        .hero-stat-number {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-taupe-grey);
+        }
+
+        .hero-stat-label {
+            font-size: 0.8rem;
+            color: var(--color-taupe-grey);
+            opacity: 0.65;
+            margin-top: 0.2rem;
+        }
+
+        /* Floating Cards */
+        .hero-visual {
+            position: relative;
+            height: 100%;
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: slideInRight 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+            opacity: 0;
+        }
+
+        .floating-card {
+            position: absolute;
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            box-shadow: 0 8px 32px rgba(96, 77, 83, 0.08), 0 2px 8px rgba(96, 77, 83, 0.04);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .floating-card:hover {
+            box-shadow: 0 12px 40px rgba(96, 77, 83, 0.12), 0 4px 12px rgba(96, 77, 83, 0.06);
+        }
+
+        .card-1 {
+            background: var(--color-soft-blush);
+            top: 12%;
+            right: 10%;
+            transform: rotate(-4deg);
+            animation: float1 6s ease-in-out infinite;
+        }
+
+        .card-1 .card-label {
+            font-family: 'Noto Sans TC', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--color-taupe-grey);
+        }
+
+        .card-1 .card-sublabel {
+            font-size: 0.75rem;
+            color: var(--color-taupe-grey);
+            opacity: 0.7;
+            margin-top: 0.25rem;
+        }
+
+        .card-2 {
+            background: var(--color-white);
+            border: 1.5px solid var(--color-pale-slate);
+            top: 30%;
+            left: 5%;
+            transform: rotate(3deg);
+            animation: float2 7s ease-in-out infinite;
+        }
+
+        .card-2 .card-label {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--color-old-rose);
+        }
+
+        .card-2 .card-sublabel {
+            font-size: 0.7rem;
+            color: var(--color-taupe-grey);
+            opacity: 0.6;
+            margin-top: 0.2rem;
+        }
+
+        .card-3 {
+            background: var(--color-fairy-floss);
+            bottom: 25%;
+            right: 5%;
+            transform: rotate(5deg);
+            animation: float3 5.5s ease-in-out infinite;
+        }
+
+        .card-3 .card-label {
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--color-taupe-grey);
+        }
+
+        .card-4 {
+            background: var(--color-white);
+            border: 1.5px solid var(--color-soft-blush);
+            bottom: 12%;
+            left: 15%;
+            transform: rotate(-6deg);
+            animation: float4 6.5s ease-in-out infinite;
+            padding: 1rem 1.25rem;
+        }
+
+        .card-4 .card-label {
+            font-family: 'Noto Sans TC', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 500;
+            color: var(--color-taupe-grey);
+        }
+
+        .card-4 .card-sublabel {
+            font-size: 0.7rem;
+            color: var(--color-old-rose);
+            margin-top: 0.15rem;
+        }
+
+        .card-5 {
+            background: var(--color-old-rose);
+            top: 55%;
+            left: 30%;
+            transform: rotate(-2deg);
+            animation: float5 7.5s ease-in-out infinite;
+            padding: 0.75rem 1.25rem;
+            border-radius: 12px;
+        }
+
+        .card-5 .card-label {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--color-white);
+            letter-spacing: 0.05em;
+        }
+
+        /* Decorative Elements */
+        .deco-dot {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--color-soft-blush);
+        }
+
+        .deco-dot-1 {
+            width: 12px;
+            height: 12px;
+            top: 8%;
+            left: 20%;
+            animation: float2 4s ease-in-out infinite;
+        }
+
+        .deco-dot-2 {
+            width: 8px;
+            height: 8px;
+            bottom: 35%;
+            right: 30%;
+            background: var(--color-old-rose);
+            opacity: 0.5;
+            animation: float1 5s ease-in-out infinite;
+        }
+
+        .deco-dot-3 {
+            width: 16px;
+            height: 16px;
+            top: 45%;
+            right: 35%;
+            background: var(--color-fairy-floss);
+            animation: float3 6s ease-in-out infinite;
+        }
+
+        .deco-line {
+            position: absolute;
+            height: 2px;
+            border-radius: 1px;
+            background: var(--color-pale-slate);
+        }
+
+        .deco-line-1 {
+            width: 40px;
+            top: 20%;
+            left: 40%;
+            transform: rotate(45deg);
+            animation: float4 5s ease-in-out infinite;
+        }
+
+        .deco-line-2 {
+            width: 30px;
+            bottom: 40%;
+            left: 8%;
+            transform: rotate(-30deg);
+            animation: float1 4.5s ease-in-out infinite;
+        }
+
+        /* Animations */
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes float1 {
+            0%, 100% { transform: rotate(-4deg) translateY(0); }
+            50% { transform: rotate(-4deg) translateY(-12px); }
+        }
+
+        @keyframes float2 {
+            0%, 100% { transform: rotate(3deg) translateY(0); }
+            50% { transform: rotate(3deg) translateY(-10px); }
+        }
+
+        @keyframes float3 {
+            0%, 100% { transform: rotate(5deg) translateY(0); }
+            50% { transform: rotate(5deg) translateY(-14px); }
+        }
+
+        @keyframes float4 {
+            0%, 100% { transform: rotate(-6deg) translateY(0); }
+            50% { transform: rotate(-6deg) translateY(-8px); }
+        }
+
+        @keyframes float5 {
+            0%, 100% { transform: rotate(-2deg) translateY(0); }
+            50% { transform: rotate(-2deg) translateY(-11px); }
+        }
+
+        /* Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            .hero-text,
+            .hero-visual {
+                animation: none;
+                opacity: 1;
+            }
+
+            .floating-card,
+            .deco-dot,
+            .deco-line {
+                animation: none;
+            }
+
+            .hero-cta {
+                transition: none;
+            }
+
+            .nav-link::after {
+                transition: none;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .hero {
+                grid-template-columns: 1fr;
+                text-align: center;
+                padding-top: 120px;
+                min-height: auto;
+                gap: 3rem;
+            }
+
+            .hero-text {
+                padding-right: 0;
+            }
+
+            .hero-subtext {
+                max-width: 100%;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .hero-stats {
+                justify-content: center;
+            }
+
+            .hero-visual {
+                min-height: 350px;
+            }
+
+            .nav {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-inner">
+            <a href="#" class="logo">
+                <span class="logo-text">Dingdong</span>
+                <span class="logo-accent">叮咚</span>
+            </a>
+            <nav class="nav">
+                <a href="#" class="nav-link">Home</a>
+                <a href="#" class="nav-link">학습 특장점</a>
+                <a href="#" class="nav-link">개설 강좌</a>
+                <a href="#" class="nav-link">뉴스레터</a>
+                <a href="#" class="nav-link">문의</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-text">
+            <div class="hero-badge">
+                <span class="hero-badge-dot"></span>
+                <span>한국인 맞춤 중국어 교육</span>
+            </div>
+            <h1 class="hero-headline">중국어,<br>문화로 배우다</h1>
+            <p class="hero-subtext">한국인을 위한 체계적인 중국어 · 중국 문화 교육 플랫폼. 언어와 문화를 함께 배우며 진짜 중국어 실력을 키워보세요.</p>
+            <a href="#" class="hero-cta">
+                <span>무료 체험 시작하기</span>
+                <span class="hero-cta-arrow">&rarr;</span>
+            </a>
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="hero-stat-number">1,200+</div>
+                    <div class="hero-stat-label">수강생</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-number">48</div>
+                    <div class="hero-stat-label">개설 강좌</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-number">4.9</div>
+                    <div class="hero-stat-label">만족도</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-visual">
+            <!-- Floating Cards -->
+            <div class="floating-card card-1">
+                <div class="card-label">你好</div>
+                <div class="card-sublabel">기초 회화</div>
+            </div>
+
+            <div class="floating-card card-2">
+                <div class="card-label">HSK 4급</div>
+                <div class="card-sublabel">체계적 시험 대비</div>
+            </div>
+
+            <div class="floating-card card-3">
+                <div class="card-label">문화 수업</div>
+            </div>
+
+            <div class="floating-card card-4">
+                <div class="card-label">学中文</div>
+                <div class="card-sublabel">매일 10분 학습</div>
+            </div>
+
+            <div class="floating-card card-5">
+                <div class="card-label">LEVEL UP</div>
+            </div>
+
+            <!-- Decorative Elements -->
+            <div class="deco-dot deco-dot-1"></div>
+            <div class="deco-dot deco-dot-2"></div>
+            <div class="deco-dot deco-dot-3"></div>
+            <div class="deco-line deco-line-1"></div>
+            <div class="deco-line deco-line-2"></div>
+        </div>
+    </section>
+</body>
+</html>

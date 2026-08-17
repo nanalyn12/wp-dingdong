@@ -1,0 +1,322 @@
+/* ─────────────────────────────────────
+   DD Adaptive Review (SM-2) — Styles
+   Glassmorphism design tokens from dd-lesson.css
+   ───────────────────────────────────── */
+
+/* ═══ Review Banner Button ═══ */
+.dd-rb-btn {
+    margin-left: auto;
+    padding: 8px 20px;
+    background: var(--dd-primary);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+}
+.dd-rb-btn:hover {
+    background: var(--dd-primary-hover);
+}
+
+/* ═══ Modal Overlay ═══ */
+.dd-srs-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: ddSrsFadeIn 0.25s ease-out;
+}
+
+@keyframes ddSrsFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ═══ Modal Card ═══ */
+.dd-srs-modal {
+    width: 92%;
+    max-width: 440px;
+    background: var(--dd-glass-strong, rgba(255,255,255,0.88));
+    backdrop-filter: var(--dd-glass-blur, blur(16px));
+    -webkit-backdrop-filter: var(--dd-glass-blur, blur(16px));
+    border: 1px solid var(--dd-glass-border, rgba(255,255,255,0.5));
+    border-radius: var(--dd-radius, 16px);
+    box-shadow: var(--dd-glass-shadow, 0 8px 32px rgba(31,38,135,0.08));
+    overflow: hidden;
+    animation: ddSrsSlideUp 0.3s ease-out;
+}
+
+@keyframes ddSrsSlideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* ═══ Header ═══ */
+.dd-srs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px 8px;
+}
+.dd-srs-progress {
+    font-size: 13px;
+    color: #888;
+    font-weight: 500;
+}
+.dd-srs-close {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: rgba(0,0,0,0.06);
+    border-radius: 50%;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+.dd-srs-close:hover {
+    background: rgba(0,0,0,0.12);
+}
+
+/* ═══ Progress Bar ═══ */
+.dd-srs-bar {
+    height: 3px;
+    background: rgba(0,0,0,0.06);
+    margin: 0 20px 16px;
+    border-radius: 2px;
+    overflow: hidden;
+}
+.dd-srs-bar-fill {
+    height: 100%;
+    background: var(--dd-primary, #DB7F8E);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+
+/* ═══ Flashcard ═══ */
+.dd-srs-card {
+    padding: 10px 24px 24px;
+    text-align: center;
+    min-height: 260px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.dd-srs-zh {
+    font-size: 36px;
+    font-weight: 700;
+    font-family: 'Noto Sans SC', sans-serif;
+    color: #1a1a2e;
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+.dd-srs-pinyin {
+    font-size: 16px;
+    color: #999;
+    margin-bottom: 16px;
+}
+.dd-srs-ko {
+    font-size: 20px;
+    color: #444;
+    margin-bottom: 24px;
+    padding: 12px 16px;
+    background: rgba(219, 127, 142, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(219, 127, 142, 0.15);
+}
+
+/* ═══ Reveal Button ═══ */
+.dd-srs-reveal-btn {
+    margin-top: 20px;
+    padding: 12px 40px;
+    background: var(--dd-primary, #DB7F8E);
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s;
+    align-self: center;
+}
+.dd-srs-reveal-btn:hover {
+    background: var(--dd-primary-hover, #c96e7d);
+    transform: scale(1.03);
+}
+.dd-srs-reveal-btn:active {
+    transform: scale(0.97);
+}
+
+/* ═══ Rating Buttons ═══ */
+.dd-srs-ratings {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.dd-srs-rate {
+    padding: 10px 4px;
+    border: none;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s;
+}
+.dd-srs-rate:active {
+    transform: scale(0.93);
+}
+
+.dd-srs-rate-again {
+    background: #FFE4E8;
+    color: #C2185B;
+}
+.dd-srs-rate-again:hover { box-shadow: 0 2px 12px rgba(194,24,91,0.2); }
+
+.dd-srs-rate-hard {
+    background: #FFF3E0;
+    color: #E65100;
+}
+.dd-srs-rate-hard:hover { box-shadow: 0 2px 12px rgba(230,81,0,0.2); }
+
+.dd-srs-rate-good {
+    background: #E8F5E9;
+    color: #2E7D32;
+}
+.dd-srs-rate-good:hover { box-shadow: 0 2px 12px rgba(46,125,50,0.2); }
+
+.dd-srs-rate-easy {
+    background: #E3F2FD;
+    color: #1565C0;
+}
+.dd-srs-rate-easy:hover { box-shadow: 0 2px 12px rgba(21,101,192,0.2); }
+
+/* ═══ Interval Preview ═══ */
+.dd-srs-intervals {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 2px;
+}
+.dd-srs-interval-preview {
+    font-size: 11px;
+    color: #aaa;
+    text-align: center;
+}
+
+/* ═══ Complete Screen ═══ */
+.dd-srs-complete {
+    text-align: center;
+    padding: 32px 24px;
+}
+.dd-srs-complete-emoji {
+    font-size: 56px;
+    margin-bottom: 12px;
+    animation: ddSrsBounce 0.6s ease;
+}
+@keyframes ddSrsBounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+.dd-srs-complete h3 {
+    font-size: 22px;
+    color: #1a1a2e;
+    margin: 0 0 8px;
+}
+.dd-srs-complete-msg {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 24px;
+}
+.dd-srs-complete-stats {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+.dd-srs-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.dd-srs-stat-num {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--dd-primary, #DB7F8E);
+}
+.dd-srs-stat-label {
+    font-size: 12px;
+    color: #999;
+    margin-top: 2px;
+}
+.dd-srs-close-btn {
+    padding: 12px 48px;
+    background: var(--dd-primary, #DB7F8E);
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.dd-srs-close-btn:hover {
+    background: var(--dd-primary-hover, #c96e7d);
+}
+
+/* ═══ Widget Addon ═══ */
+.dd-srs-widget-addon {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+}
+.dd-srs-widget-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    padding: 2px 0;
+}
+.dd-srs-widget-label {
+    color: #888;
+}
+.dd-srs-widget-value {
+    font-weight: 600;
+    color: #555;
+}
+.dd-srs-widget-due .dd-srs-widget-label {
+    color: var(--dd-primary, #DB7F8E);
+}
+.dd-srs-due-badge {
+    background: var(--dd-primary, #DB7F8E);
+    color: #fff !important;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+}
+
+/* ═══ Responsive ═══ */
+@media (max-width: 480px) {
+    .dd-srs-modal {
+        width: 96%;
+        max-width: none;
+        border-radius: 12px;
+    }
+    .dd-srs-zh { font-size: 28px; }
+    .dd-srs-ko { font-size: 17px; }
+    .dd-srs-rate { padding: 8px 2px; font-size: 12px; }
+    .dd-srs-ratings { gap: 5px; }
+}

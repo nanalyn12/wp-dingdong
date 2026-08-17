@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dingdong - Design Direction 3: Silk Pavilion</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --fairy-floss: #EBCCC5;
+            --old-rose: #DB7F8E;
+            --pale-slate: #D5C5C8;
+            --taupe-grey: #604D53;
+            --soft-blush: #FFDBDA;
+            --white: #FFFFFF;
+            --deep-rose: #C4626F;
+            --content-size: 800px;
+            --wide-size: 1280px;
+        }
+
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            color: var(--taupe-grey);
+            background: var(--fairy-floss);
+            overflow-x: hidden;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(235, 204, 197, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--pale-slate);
+            padding: 0 2rem;
+        }
+
+        .header-inner {
+            max-width: var(--wide-size);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 72px;
+        }
+
+        .site-name {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.75rem;
+            color: var(--taupe-grey);
+            text-decoration: none;
+            position: relative;
+            letter-spacing: 0.02em;
+        }
+
+        .site-name::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--old-rose), var(--pale-slate), transparent);
+            border-radius: 1px;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        nav a {
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: var(--taupe-grey);
+            text-decoration: none;
+            position: relative;
+            padding: 0.25rem 0;
+            transition: color 0.3s ease;
+        }
+
+        nav a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 1.5px;
+            background: var(--old-rose);
+            transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), left 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        nav a:hover {
+            color: var(--deep-rose);
+        }
+
+        nav a:hover::after {
+            width: 100%;
+            left: 0;
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 2rem 80px;
+            position: relative;
+            background: linear-gradient(160deg, var(--fairy-floss) 0%, var(--soft-blush) 40%, var(--fairy-floss) 70%, #F2D8D2 100%);
+            background-size: 200% 200%;
+            animation: silkShimmer 12s ease-in-out infinite;
+        }
+
+        @keyframes silkShimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* Ornamental Frame */
+        .hero-frame {
+            position: relative;
+            max-width: var(--content-size);
+            width: 100%;
+            background: var(--white);
+            padding: 4rem 3.5rem;
+            border: 2px solid var(--pale-slate);
+            box-shadow:
+                0 0 0 8px rgba(213, 197, 200, 0.3),
+                0 20px 60px rgba(96, 77, 83, 0.1),
+                inset 0 0 80px rgba(235, 204, 197, 0.2);
+            animation: frameReveal 1.2s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+            opacity: 0;
+            transform: scale(0.92);
+        }
+
+        @keyframes frameReveal {
+            0% {
+                opacity: 0;
+                transform: scale(0.92);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Corner Ornaments - Top Left */
+        .hero-frame::before {
+            content: '';
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 40px;
+            height: 40px;
+            border-top: 3px solid var(--old-rose);
+            border-left: 3px solid var(--old-rose);
+            opacity: 0;
+            animation: cornerFadeIn 0.6s ease 0.8s forwards;
+        }
+
+        /* Corner Ornaments - Bottom Right */
+        .hero-frame::after {
+            content: '';
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            width: 40px;
+            height: 40px;
+            border-bottom: 3px solid var(--old-rose);
+            border-right: 3px solid var(--old-rose);
+            opacity: 0;
+            animation: cornerFadeIn 0.6s ease 0.8s forwards;
+        }
+
+        @keyframes cornerFadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        /* Additional corner ornaments via inner wrapper */
+        .frame-inner {
+            position: relative;
+            text-align: center;
+        }
+
+        .frame-inner::before {
+            content: '';
+            position: absolute;
+            top: -28px;
+            right: -24px;
+            width: 40px;
+            height: 40px;
+            border-top: 3px solid var(--old-rose);
+            border-right: 3px solid var(--old-rose);
+            opacity: 0;
+            animation: cornerFadeIn 0.6s ease 0.8s forwards;
+        }
+
+        .frame-inner::after {
+            content: '';
+            position: absolute;
+            bottom: -28px;
+            left: -24px;
+            width: 40px;
+            height: 40px;
+            border-bottom: 3px solid var(--old-rose);
+            border-left: 3px solid var(--old-rose);
+            opacity: 0;
+            animation: cornerFadeIn 0.6s ease 0.8s forwards;
+        }
+
+        /* Lattice pattern border overlay */
+        .lattice-border {
+            position: absolute;
+            top: 28px;
+            left: 28px;
+            right: 28px;
+            bottom: 28px;
+            border: 1px solid var(--pale-slate);
+            pointer-events: none;
+            opacity: 0;
+            animation: cornerFadeIn 0.8s ease 1s forwards;
+        }
+
+        .lattice-border::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -1px;
+            right: -1px;
+            height: 1px;
+            background: linear-gradient(90deg, var(--pale-slate), transparent 15%, transparent 85%, var(--pale-slate));
+        }
+
+        /* Decorative diamond at center top */
+        .lattice-diamond {
+            position: absolute;
+            top: -7px;
+            left: 50%;
+            transform: translateX(-50%) rotate(45deg);
+            width: 12px;
+            height: 12px;
+            border: 1.5px solid var(--old-rose);
+            background: var(--white);
+            opacity: 0;
+            animation: cornerFadeIn 0.6s ease 1.2s forwards;
+        }
+
+        /* Hero Content */
+        .hero-content {
+            opacity: 0;
+            animation: contentFadeIn 0.8s ease 0.6s forwards;
+        }
+
+        @keyframes contentFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-label {
+            font-family: 'Noto Sans TC', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 400;
+            letter-spacing: 0.3em;
+            color: var(--old-rose);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        .hero-headline {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(2.2rem, 5vw, 3.2rem);
+            color: var(--taupe-grey);
+            line-height: 1.3;
+            letter-spacing: 0.02em;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-subtext {
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 300;
+            color: var(--taupe-grey);
+            line-height: 1.8;
+            margin-bottom: 2.5rem;
+            opacity: 0.85;
+        }
+
+        .hero-cta {
+            display: inline-block;
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--taupe-grey);
+            text-decoration: none;
+            padding: 0.9rem 2.5rem;
+            border: 1.5px solid var(--old-rose);
+            background: transparent;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            letter-spacing: 0.05em;
+            overflow: hidden;
+        }
+
+        .hero-cta::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--old-rose);
+            transition: left 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: -1;
+        }
+
+        .hero-cta:hover {
+            color: var(--white);
+            border-color: var(--old-rose);
+        }
+
+        .hero-cta:hover::before {
+            left: 0;
+        }
+
+        /* Decorative separator line above CTA */
+        .hero-divider {
+            width: 48px;
+            height: 1px;
+            background: var(--old-rose);
+            margin: 0 auto 2rem;
+            opacity: 0.6;
+        }
+
+        /* Silk wave at bottom of hero */
+        .silk-wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            overflow: hidden;
+        }
+
+        .silk-wave svg {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Ambient floating elements */
+        .ambient-dot {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--old-rose);
+            opacity: 0.08;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .ambient-dot:nth-child(1) {
+            width: 200px;
+            height: 200px;
+            top: 10%;
+            left: -5%;
+            animation-delay: 0s;
+        }
+
+        .ambient-dot:nth-child(2) {
+            width: 150px;
+            height: 150px;
+            bottom: 20%;
+            right: -3%;
+            animation-delay: -3s;
+        }
+
+        .ambient-dot:nth-child(3) {
+            width: 100px;
+            height: 100px;
+            top: 30%;
+            right: 10%;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+
+        /* ===== REDUCED MOTION ===== */
+        @media (prefers-reduced-motion: reduce) {
+            .hero {
+                animation: none;
+            }
+
+            .hero-frame {
+                animation: none;
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            .hero-frame::before,
+            .hero-frame::after,
+            .frame-inner::before,
+            .frame-inner::after,
+            .lattice-border,
+            .lattice-diamond {
+                animation: none;
+                opacity: 1;
+            }
+
+            .hero-content {
+                animation: none;
+                opacity: 1;
+            }
+
+            .ambient-dot {
+                animation: none;
+            }
+
+            .hero-cta::before {
+                transition: none;
+            }
+
+            nav a::after {
+                transition: none;
+            }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .header-inner {
+                height: 64px;
+            }
+
+            nav {
+                gap: 1.2rem;
+            }
+
+            nav a {
+                font-size: 0.8rem;
+            }
+
+            .site-name {
+                font-size: 1.4rem;
+            }
+
+            .hero {
+                padding: 100px 1.25rem 60px;
+            }
+
+            .hero-frame {
+                padding: 3rem 2rem;
+            }
+
+            .hero-headline {
+                font-size: 1.8rem;
+            }
+
+            .hero-subtext {
+                font-size: 0.95rem;
+            }
+
+            .lattice-border {
+                top: 20px;
+                left: 20px;
+                right: 20px;
+                bottom: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            nav {
+                gap: 0.8rem;
+            }
+
+            nav a {
+                font-size: 0.75rem;
+            }
+
+            .hero-frame {
+                padding: 2.5rem 1.5rem;
+            }
+
+            .hero-frame::before,
+            .hero-frame::after,
+            .frame-inner::before,
+            .frame-inner::after {
+                width: 28px;
+                height: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="header-inner">
+            <a href="#" class="site-name">Dingdong</a>
+            <nav>
+                <a href="#">Home</a>
+                <a href="#">학습 특장점</a>
+                <a href="#">개설 강좌</a>
+                <a href="#">뉴스레터</a>
+                <a href="#">문의</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+        <!-- Ambient background elements -->
+        <div class="ambient-dot"></div>
+        <div class="ambient-dot"></div>
+        <div class="ambient-dot"></div>
+
+        <!-- Ornamental Frame -->
+        <div class="hero-frame">
+            <div class="lattice-border">
+                <div class="lattice-diamond"></div>
+            </div>
+            <div class="frame-inner">
+                <div class="hero-content">
+                    <p class="hero-label">Chinese Language & Culture</p>
+                    <h1 class="hero-headline">중국어, 문화로 배우다</h1>
+                    <p class="hero-subtext">한국인을 위한 체계적인 중국어 · 중국 문화 교육 플랫폼</p>
+                    <div class="hero-divider"></div>
+                    <a href="#" class="hero-cta">무료 체험 시작하기</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Silk wave at bottom -->
+        <div class="silk-wave">
+            <svg viewBox="0 0 1440 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0,60 C240,100 480,20 720,60 C960,100 1200,20 1440,60 L1440,120 L0,120 Z" fill="rgba(255,255,255,0.4)"/>
+                <path d="M0,80 C320,110 640,50 960,80 C1120,95 1280,65 1440,80 L1440,120 L0,120 Z" fill="rgba(255,255,255,0.6)"/>
+                <path d="M0,95 C360,115 720,85 1080,100 C1260,108 1380,92 1440,95 L1440,120 L0,120 Z" fill="rgba(255,255,255,0.9)"/>
+            </svg>
+        </div>
+    </section>
+
+</body>
+</html>

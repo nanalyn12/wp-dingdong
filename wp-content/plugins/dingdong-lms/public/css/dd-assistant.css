@@ -1,0 +1,1288 @@
+/* ============================================
+   叮叮 (Dīngding) — AI 학습도우미 판다
+   v2.1 — Cute Idol + Costume + Roleplay
+   ============================================ */
+
+/* ── Character Container ── */
+.dd-asst-character {
+    position: fixed;
+    bottom: 12px;
+    right: 16px;
+    z-index: 9000;
+    width: 110px;
+    height: 138px;
+    cursor: pointer;
+    animation: ddAsstFloat 3.5s ease-in-out infinite, ddAsstEnter 0.8s cubic-bezier(0.34,1.56,0.64,1) both;
+    animation-delay: 0s, 0.3s;
+    filter: drop-shadow(0 6px 18px rgba(60,60,60,0.15));
+    transition: filter 0.3s;
+}
+.dd-asst-character:hover {
+    filter: drop-shadow(0 8px 24px rgba(60,60,60,0.25));
+    animation-play-state: paused, running;
+}
+.dd-asst-character.is-open {
+    transform: scale(0) translateY(20px);
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.3s ease;
+    animation: none;
+}
+.dd-asst-character svg { width: 100%; height: 100%; }
+
+/* "딩딩아" 호출 대기 중 — 듣고 있다는 부드러운 표시 */
+.dd-asst-character.is-wake-listening::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -6px;
+    width: 22px;
+    height: 22px;
+    margin-left: -11px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(120,200,120,0.55) 0%, rgba(120,200,120,0) 70%);
+    animation: ddWakePulse 1.8s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes ddWakePulse {
+    0%, 100% { transform: scale(0.6); opacity: 0.4; }
+    50%      { transform: scale(1.3); opacity: 0.9; }
+}
+
+/* Idle float */
+@keyframes ddAsstFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+}
+/* Entrance */
+@keyframes ddAsstEnter {
+    0%   { transform: translateY(60px) scale(0.3); opacity: 0; }
+    60%  { transform: translateY(-10px) scale(1.05); opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Name tag */
+.dd-asst-nametag {
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--dd-primary, #DB7F8E);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15rem 0.55rem;
+    border-radius: 8px;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+    box-shadow: 0 2px 6px rgba(219,127,142,0.3);
+}
+
+/* ── Scroll-to-Top Button ── */
+.dd-top-btn {
+    position: fixed;
+    bottom: 18px;
+    right: 136px;
+    z-index: 8998;
+    width: 42px; height: 42px;
+    border: none; border-radius: 50%;
+    background: #fff;
+    color: var(--dd-text, #3D3235);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.25s;
+    animation: ddAsstEnter 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.dd-top-btn:hover {
+    background: var(--dd-primary, #DB7F8E); color: #fff;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 16px rgba(219,127,142,0.3);
+}
+body[data-dd-page="lesson"] .dd-top-btn { bottom: 148px; }
+
+/* Lesson page offset — above API key FAB with extra gap */
+body[data-dd-page="lesson"] .dd-asst-character { bottom: 140px; }
+body[data-dd-page="lesson"] .dd-asst-bubble   { bottom: 290px; }
+body[data-dd-page="lesson"] .dd-asst-panel     { bottom: 140px; }
+
+/* ── Speech Bubble ── */
+.dd-asst-bubble {
+    position: fixed;
+    bottom: 160px;
+    right: 20px;
+    z-index: 8999;
+    background: #fff;
+    border: 1.5px solid var(--dd-border, #E8E0E3);
+    border-radius: 18px 18px 6px 18px;
+    padding: 0.9rem 1.15rem;
+    max-width: 240px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: var(--dd-text, #3D3235);
+    pointer-events: none;
+    animation: ddBubbleIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.dd-asst-bubble.is-hidden { animation: ddBubbleOut 0.3s ease both; }
+.dd-asst-bubble-name {
+    font-weight: 700;
+    color: var(--dd-primary, #DB7F8E);
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.78rem;
+}
+/* Bubble controls — pause/dismiss */
+.dd-asst-bubble-controls {
+    position: absolute; top: 4px; right: 6px;
+    display: flex; gap: 2px; opacity: 0;
+    transition: opacity 0.2s;
+}
+.dd-asst-bubble:hover .dd-asst-bubble-controls { opacity: 1; }
+.dd-asst-bubble-btn {
+    width: 22px; height: 22px; border: none; border-radius: 6px;
+    background: rgba(0,0,0,0.06); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--dd-text-light, #8A7E82); transition: all 0.2s;
+    padding: 0;
+}
+.dd-asst-bubble-btn:hover { background: rgba(0,0,0,0.12); color: var(--dd-text, #3D3235); }
+.dd-asst-bubble-btn.is-paused { background: var(--dd-primary, #DB7F8E); color: #fff; }
+/* Tail arrow */
+.dd-asst-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    right: 36px;
+    width: 16px; height: 16px;
+    background: #fff;
+    border-right: 1.5px solid var(--dd-border, #E8E0E3);
+    border-bottom: 1.5px solid var(--dd-border, #E8E0E3);
+    transform: rotate(45deg);
+}
+@keyframes ddBubbleIn {
+    from { transform: translateY(12px) scale(0.85); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes ddBubbleOut {
+    from { transform: translateY(0) scale(1); opacity: 1; }
+    to   { transform: translateY(8px) scale(0.9); opacity: 0; }
+}
+
+/* ── Chat Panel ── */
+.dd-asst-panel {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 9001;
+    width: 380px;
+    max-height: 560px;
+    min-width: 300px;
+    min-height: 360px;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: ddPanelIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+    transform-origin: bottom right;
+    resize: both;
+    overflow: auto;
+}
+/* Resize handle styling */
+.dd-asst-panel::-webkit-resizer {
+    background: transparent;
+}
+.dd-asst-resize-handle {
+    position: absolute; top: 0; left: 0;
+    width: 24px; height: 24px; cursor: nw-resize; z-index: 2;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0.3; transition: opacity 0.2s;
+}
+.dd-asst-resize-handle:hover { opacity: 0.7; }
+.dd-asst-resize-handle svg { width: 12px; height: 12px; color: var(--dd-text-light, #8A7E82); }
+.dd-asst-panel.is-closing { animation: ddPanelOut 0.25s ease both; }
+@keyframes ddPanelIn {
+    from { transform: scale(0.5) translateY(20px); opacity: 0; }
+    to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+@keyframes ddPanelOut {
+    from { transform: scale(1) translateY(0); opacity: 1; }
+    to   { transform: scale(0.5) translateY(20px); opacity: 0; }
+}
+
+/* Header */
+.dd-asst-header {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, #FFF0F3 0%, #FFF5F5 100%);
+    border-bottom: 1px solid var(--dd-border, #E8E0E3);
+    flex-shrink: 0;
+}
+.dd-asst-header-avatar {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: #fff; padding: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); flex-shrink: 0;
+    border: 1.5px solid rgba(219,127,142,0.2);
+}
+.dd-asst-header-avatar svg { width: 100%; height: 100%; }
+.dd-asst-header-info { flex: 1; min-width: 0; }
+.dd-asst-header-name { font-size: 0.95rem; font-weight: 700; color: var(--dd-text, #3D3235); }
+.dd-asst-header-status {
+    font-size: 0.72rem; color: var(--dd-text-light, #8A7E82);
+    display: flex; align-items: center; gap: 0.3rem;
+}
+.dd-asst-header-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #22C55E; display: inline-block;
+}
+.dd-asst-header-actions { display: flex; gap: 0.25rem; }
+.dd-asst-header-btn {
+    width: 32px; height: 32px; border: none;
+    background: rgba(0,0,0,0.05); border-radius: 8px;
+    cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 1.1rem;
+    color: var(--dd-text-light, #8A7E82); transition: background 0.2s;
+}
+.dd-asst-header-btn:hover { background: rgba(0,0,0,0.1); }
+
+/* Messages */
+.dd-asst-messages {
+    flex: 1; overflow-y: auto; padding: 1rem 1.25rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+    min-height: 150px; scroll-behavior: smooth;
+}
+.dd-asst-msg { display: flex; gap: 0.5rem; align-items: flex-end; animation: ddMsgIn 0.3s ease both; }
+.dd-asst-msg--user { flex-direction: row-reverse; }
+@keyframes ddMsgIn {
+    from { transform: translateY(8px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+}
+.dd-asst-msg-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #FFF0F3; padding: 2px; flex-shrink: 0;
+}
+.dd-asst-msg-avatar svg { width: 100%; height: 100%; }
+.dd-asst-msg--user .dd-asst-msg-avatar { display: none; }
+.dd-asst-msg-bubble {
+    max-width: 80%; padding: 0.7rem 1rem; border-radius: 14px;
+    font-size: 0.88rem; line-height: 1.65; word-break: break-word; white-space: pre-line;
+}
+.dd-asst-msg--bot .dd-asst-msg-bubble {
+    background: var(--dd-bg, #FAF7F8); color: var(--dd-text, #3D3235);
+    border-bottom-left-radius: 4px;
+}
+.dd-asst-msg--user .dd-asst-msg-bubble {
+    background: var(--dd-primary, #DB7F8E); color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+/* Typing */
+.dd-asst-typing { display: flex; gap: 0.3rem; padding: 0.7rem 1rem; align-items: center; }
+.dd-asst-typing-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--dd-primary, #DB7F8E);
+    animation: ddTypingBounce 1.2s ease-in-out infinite;
+}
+.dd-asst-typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.dd-asst-typing-dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes ddTypingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30%           { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Typing label */
+.dd-asst-typing-label {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.45);
+    margin-left: 0.4rem;
+    animation: ddTypingPulse 2s ease-in-out infinite;
+}
+@keyframes ddTypingPulse {
+    0%, 100% { opacity: 0.45; }
+    50%      { opacity: 0.8; }
+}
+
+/* Header status states */
+.dd-asst-header-dot.is-thinking {
+    background: #FBBF24;
+    animation: ddThinkingPulse 1s ease-in-out infinite;
+}
+@keyframes ddThinkingPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.5; transform: scale(0.7); }
+}
+.dd-asst-header-dot.is-done {
+    background: #22C55E;
+    animation: ddDonePop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes ddDonePop {
+    from { transform: scale(0); }
+    to   { transform: scale(1); }
+}
+.dd-asst-header-dot.is-roleplay {
+    background: #E8485F;
+    animation: ddThinkingPulse 1.5s ease-in-out infinite;
+}
+
+/* Quick Actions */
+.dd-asst-quick {
+    padding: 0.5rem 1.25rem 0.75rem;
+    display: flex; flex-wrap: wrap; gap: 0.4rem;
+    border-top: 1px solid var(--dd-border, #E8E0E3); flex-shrink: 0;
+}
+.dd-asst-quick-btn {
+    padding: 0.4rem 0.85rem;
+    background: var(--dd-bg, #FAF7F8);
+    border: 1px solid var(--dd-border, #E8E0E3);
+    border-radius: 20px; font-size: 0.78rem; font-weight: 500;
+    color: var(--dd-text, #3D3235); cursor: pointer;
+    transition: all 0.2s; white-space: nowrap;
+}
+.dd-asst-quick-btn:hover {
+    background: var(--dd-primary, #DB7F8E);
+    color: #fff; border-color: var(--dd-primary, #DB7F8E);
+}
+
+/* Input */
+.dd-asst-input-area {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--dd-border, #E8E0E3);
+    background: #FAFAFA; border-radius: 0 0 20px 20px; flex-shrink: 0;
+}
+.dd-asst-input {
+    flex: 1; border: 1px solid var(--dd-border, #E8E0E3);
+    border-radius: 12px; padding: 0.55rem 0.9rem; font-size: 0.88rem;
+    outline: none; transition: border-color 0.2s; background: #fff; font-family: inherit;
+}
+.dd-asst-input:focus { border-color: var(--dd-primary, #DB7F8E); }
+.dd-asst-input::placeholder { color: var(--dd-text-light, #8A7E82); }
+.dd-asst-send {
+    width: 38px; height: 38px; border-radius: 50%; border: none;
+    background: var(--dd-primary, #DB7F8E); color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, transform 0.15s; flex-shrink: 0;
+}
+.dd-asst-send:hover { background: var(--dd-primary-hover, #C96A7D); transform: scale(1.08); }
+.dd-asst-send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.dd-asst-send svg { width: 18px; height: 18px; }
+
+/* Mic button */
+.dd-asst-mic {
+    width: 38px; height: 38px; border-radius: 50%; border: none;
+    background: #f0f0f0; color: #666; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s; flex-shrink: 0;
+}
+.dd-asst-mic:hover { background: #e0e0e0; transform: scale(1.08); }
+.dd-asst-mic svg { width: 18px; height: 18px; }
+.dd-asst-mic.is-listening {
+    background: #E53935; color: #fff;
+    animation: ddMicPulse 1.5s ease-in-out infinite;
+}
+@keyframes ddMicPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.4); }
+    50% { box-shadow: 0 0 0 10px rgba(229,57,53,0); }
+}
+
+/* TTS play button inside messages */
+.dd-asst-tts-btn {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    margin-top: 0.5rem; padding: 0.25rem 0.6rem;
+    background: rgba(219,127,142,0.1); border: 1px solid rgba(219,127,142,0.2);
+    border-radius: 8px; cursor: pointer; font-size: 0.72rem;
+    color: var(--dd-primary, #DB7F8E); font-family: inherit;
+    transition: background 0.2s;
+}
+.dd-asst-tts-btn:hover { background: rgba(219,127,142,0.2); }
+
+/* API notice */
+.dd-asst-api-notice {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.5rem 1rem; background: #FFFBEB;
+    border-top: 1px solid #FDE68A; font-size: 0.75rem; color: #92400E; flex-shrink: 0;
+}
+.dd-asst-api-notice a {
+    color: var(--dd-primary, #DB7F8E); font-weight: 600;
+    text-decoration: none; cursor: pointer;
+}
+.dd-asst-api-notice a:hover { text-decoration: underline; }
+
+/* ── Costume Picker ── */
+.dd-asst-costume-picker { padding: 0.3rem 0; }
+.dd-asst-costume-section { margin-bottom: 0.6rem; }
+.dd-asst-costume-section b { display: block; margin-bottom: 0.4rem; font-size: 0.82rem; }
+.dd-asst-costume-grid {
+    display: flex; flex-wrap: wrap; gap: 0.35rem;
+}
+.dd-asst-costume-btn {
+    padding: 0.35rem 0.65rem; border-radius: 10px;
+    border: 1.5px solid var(--dd-border, #E8E0E3);
+    background: #fff; font-size: 0.75rem; cursor: pointer;
+    transition: all 0.2s; font-family: inherit;
+}
+.dd-asst-costume-btn:hover { border-color: var(--dd-primary, #DB7F8E); }
+.dd-asst-costume-btn.is-active {
+    background: var(--dd-primary, #DB7F8E); color: #fff;
+    border-color: var(--dd-primary, #DB7F8E);
+}
+.dd-asst-color-grid {
+    display: flex; gap: 0.4rem;
+}
+.dd-asst-color-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2.5px solid transparent; cursor: pointer;
+    transition: all 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.dd-asst-color-btn:hover { transform: scale(1.15); }
+.dd-asst-color-btn.is-active {
+    border-color: #333; transform: scale(1.15);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+
+/* ── Roleplay Cards ── */
+.dd-asst-rp-list { padding: 0.3rem 0; }
+.dd-asst-rp-list > b { display: block; margin-bottom: 0.2rem; font-size: 0.88rem; }
+.dd-asst-rp-list > p { font-size: 0.78rem; color: var(--dd-text-light, #8A7E82); margin: 0 0 0.6rem; }
+.dd-asst-rp-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;
+}
+.dd-asst-rp-card {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 0.6rem 0.4rem; border-radius: 12px;
+    border: 1.5px solid var(--dd-border, #E8E0E3);
+    background: #fff; cursor: pointer; transition: all 0.2s;
+    text-align: center; font-family: inherit;
+}
+.dd-asst-rp-card:hover {
+    border-color: var(--dd-primary, #DB7F8E);
+    background: var(--dd-bg, #FAF7F8);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.dd-asst-rp-icon { font-size: 1.4rem; margin-bottom: 0.2rem; }
+.dd-asst-rp-title { font-size: 0.78rem; font-weight: 700; color: var(--dd-text, #3D3235); }
+.dd-asst-rp-desc { font-size: 0.68rem; color: var(--dd-text-light, #8A7E82); margin-top: 0.15rem; }
+
+/* ============================================
+   Coachmark 가이드 시스템
+   ============================================ */
+.dd-coach-overlay {
+    position: fixed; inset: 0; z-index: 10000; pointer-events: auto;
+}
+.dd-coach-spotlight {
+    position: absolute; z-index: 10001; border-radius: 10px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.55);
+    transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+.dd-coach-spotlight::before {
+    content: ''; position: absolute; inset: -4px;
+    border-radius: 14px; border: 2px solid var(--dd-primary, #DB7F8E);
+    animation: ddCoachRing 2s ease-in-out infinite;
+}
+@keyframes ddCoachRing {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50%      { opacity: 0.8; transform: scale(1.02); }
+}
+
+.dd-coach-tooltip {
+    position: absolute; z-index: 10002; background: #fff;
+    border-radius: 16px; padding: 0; width: 320px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    animation: ddCoachTipIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes ddCoachTipIn {
+    from { transform: translateY(12px) scale(0.95); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+.dd-coach-tooltip[data-pos="bottom"]::before,
+.dd-coach-tooltip[data-pos="top"]::after,
+.dd-coach-tooltip[data-pos="left"]::after,
+.dd-coach-tooltip[data-pos="right"]::after {
+    content: ''; position: absolute; width: 14px; height: 14px;
+    background: #fff; transform: rotate(45deg);
+}
+.dd-coach-tooltip[data-pos="bottom"]::before {
+    top: -7px; left: 50%; margin-left: -7px;
+    box-shadow: -2px -2px 4px rgba(0,0,0,0.06);
+}
+.dd-coach-tooltip[data-pos="top"]::after {
+    bottom: -7px; left: 50%; margin-left: -7px;
+    box-shadow: 2px 2px 4px rgba(0,0,0,0.06);
+}
+.dd-coach-tooltip[data-pos="left"]::after {
+    right: -7px; top: 50%; margin-top: -7px;
+    box-shadow: 2px -2px 4px rgba(0,0,0,0.06);
+}
+.dd-coach-tooltip[data-pos="right"]::after {
+    left: -7px; top: 50%; margin-top: -7px;
+    box-shadow: -2px 2px 4px rgba(0,0,0,0.06);
+}
+
+.dd-coach-header {
+    padding: 1.15rem 1.25rem 0; display: flex; align-items: center; gap: 0.6rem;
+}
+.dd-coach-header-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; flex-shrink: 0;
+}
+.dd-coach-header-icon--pink   { background: #FFF0F3; }
+.dd-coach-header-icon--blue   { background: #EEF6FF; }
+.dd-coach-header-icon--green  { background: #F0FFF4; }
+.dd-coach-header-icon--amber  { background: #FFF8EB; }
+.dd-coach-header-icon--purple { background: #F5F0FF; }
+.dd-coach-title { font-size: 1rem; font-weight: 700; color: var(--dd-text, #3D3235); }
+.dd-coach-body {
+    padding: 0.75rem 1.25rem; font-size: 0.88rem; line-height: 1.7;
+    color: var(--dd-text-light, #8A7E82);
+}
+.dd-coach-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 1.25rem 1rem;
+    border-top: 1px solid var(--dd-border, #E8E0E3);
+}
+.dd-coach-progress { display: flex; align-items: center; gap: 0.35rem; }
+.dd-coach-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--dd-border, #E8E0E3); transition: all 0.3s;
+}
+.dd-coach-dot.is-active { background: var(--dd-primary, #DB7F8E); width: 18px; border-radius: 4px; }
+.dd-coach-dot.is-done { background: #BBF7D0; }
+.dd-coach-actions { display: flex; gap: 0.5rem; }
+.dd-coach-btn {
+    padding: 0.45rem 1rem; border-radius: 8px;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none;
+}
+.dd-coach-btn--skip { background: none; color: var(--dd-text-light, #8A7E82); }
+.dd-coach-btn--skip:hover { color: var(--dd-text, #3D3235); }
+.dd-coach-btn--prev {
+    background: var(--dd-bg, #FAF7F8); color: var(--dd-text, #3D3235);
+    border: 1px solid var(--dd-border, #E8E0E3);
+}
+.dd-coach-btn--prev:hover { border-color: var(--dd-primary, #DB7F8E); }
+.dd-coach-btn--next { background: var(--dd-primary, #DB7F8E); color: #fff; }
+.dd-coach-btn--next:hover { background: var(--dd-primary-hover, #C96A7D); }
+.dd-coach-counter {
+    font-size: 0.7rem; font-weight: 600; color: var(--dd-text-light, #8A7E82);
+    padding: 0.15rem 0.5rem; background: var(--dd-bg, #FAF7F8); border-radius: 10px;
+}
+
+/* ── Welcome Screen (fullscreen voice conversation) ── */
+.dd-welcome-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: ddWelcomeScreenIn 0.6s ease both;
+}
+.dd-welcome-screen.is-dismissing {
+    animation: ddWelcomeScreenOut 0.8s cubic-bezier(0.4,0,0.2,1) both;
+}
+@keyframes ddWelcomeScreenIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes ddWelcomeScreenOut {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(-30px); }
+}
+
+.dd-welcome-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    text-align: center;
+    max-width: 420px;
+    padding: 2rem;
+}
+
+/* Panda */
+.dd-welcome-panda {
+    width: 180px;
+    height: 210px;
+    filter: drop-shadow(0 8px 24px rgba(219,127,142,0.25));
+    animation: ddWelcomePandaEnter 1.2s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.dd-welcome-panda svg { width: 100%; height: 100%; }
+@keyframes ddWelcomePandaEnter {
+    0%   { opacity: 0; transform: translateY(80px) scale(0.2) rotate(-12deg); }
+    45%  { opacity: 1; transform: translateY(-20px) scale(1.1) rotate(4deg); }
+    65%  { transform: translateY(6px) scale(0.97) rotate(-2deg); }
+    80%  { transform: translateY(-3px) scale(1.02) rotate(0.5deg); }
+    100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+}
+
+/* Speech bubble */
+.dd-welcome-bubble {
+    background: #F9F5F6;
+    border-radius: 20px;
+    padding: 1.3rem 1.6rem;
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #333;
+    max-width: 360px;
+    min-height: 60px;
+    box-shadow: 0 4px 16px rgba(219,127,142,0.1);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.4s, transform 0.4s;
+    position: relative;
+    order: -1;
+}
+.dd-welcome-bubble.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.dd-welcome-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid #F9F5F6;
+}
+
+/* Mic area */
+.dd-welcome-listen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+.dd-welcome-mic {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    border: 2px solid var(--dd-primary, #DB7F8E);
+    background: #fff;
+    color: var(--dd-primary, #DB7F8E);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+.dd-welcome-mic svg { width: 24px; height: 24px; }
+.dd-welcome-mic:hover {
+    background: #FFF0F3;
+}
+.dd-welcome-mic.is-listening {
+    background: var(--dd-primary, #DB7F8E);
+    color: #fff;
+    border-color: var(--dd-primary, #DB7F8E);
+    animation: ddWelcomeMicPulse 1.5s ease-in-out infinite;
+}
+.dd-welcome-mic.is-speaking {
+    background: #EDE9FE;
+    color: #7C3AED;
+    border-color: #7C3AED;
+    animation: ddWelcomeMicPulse 2s ease-in-out infinite;
+}
+@keyframes ddWelcomeMicPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(219,127,142,0.4); }
+    50%      { box-shadow: 0 0 0 14px rgba(219,127,142,0); }
+}
+.dd-welcome-listen-text {
+    font-size: 0.82rem;
+    color: #999;
+    margin: 0;
+    min-height: 1.2em;
+}
+
+/* Start button */
+.dd-welcome-start {
+    padding: 0.85rem 2.2rem;
+    background: var(--dd-primary, #DB7F8E);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: 0 4px 16px rgba(219,127,142,0.3);
+    margin-top: 0.5rem;
+}
+.dd-welcome-start:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(219,127,142,0.45);
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+    .dd-welcome-panda { width: 130px; height: 152px; }
+    .dd-welcome-bubble { max-width: 290px; padding: 1rem 1.2rem; font-size: 0.9rem; }
+    .dd-welcome-mic { width: 52px; height: 52px; }
+    .dd-welcome-content { padding: 1.5rem; gap: 1.2rem; }
+    .dd-asst-character { width: 90px; height: 105px; right: 10px; bottom: 8px; }
+    .dd-asst-bubble { right: 10px; bottom: 120px; max-width: 200px; font-size: 0.82rem; }
+    .dd-asst-panel {
+        width: calc(100vw - 1rem); right: 0.5rem; bottom: 0.5rem;
+        max-height: 75vh; border-radius: 16px;
+    }
+    body[data-dd-page="lesson"] .dd-asst-character { bottom: 128px; }
+    body[data-dd-page="lesson"] .dd-asst-bubble    { bottom: 240px; }
+    body[data-dd-page="lesson"] .dd-asst-panel     { bottom: 128px; }
+    .dd-asst-rp-grid { grid-template-columns: 1fr 1fr; }
+    .dd-coach-tooltip { width: 280px; }
+    .dd-gami-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .dd-gami-calendar { grid-template-columns: repeat(7, 1fr) !important; }
+    .dd-gami-cal-day { width: 22px !important; height: 22px !important; font-size: 0.55rem !important; }
+    .dd-gami-ach-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* ============================================
+   Gamification — Toasts, Challenges, Stats
+   ============================================ */
+
+/* ── Toast notifications ── */
+.dd-gami-toasts {
+    position: fixed; top: 20px; right: 20px; z-index: 10005;
+    display: flex; flex-direction: column; gap: 0.5rem;
+    pointer-events: none;
+}
+.dd-gami-toast {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.7rem 1.1rem; border-radius: 12px;
+    background: #fff; color: var(--dd-text, #3D3235);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+    font-size: 0.85rem; font-weight: 500;
+    transform: translateX(120%); opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+    pointer-events: auto; max-width: 320px;
+}
+.dd-gami-toast.is-visible { transform: translateX(0); opacity: 1; }
+.dd-gami-toast.is-leaving { transform: translateX(120%); opacity: 0; }
+.dd-gami-toast-icon { font-size: 1.3rem; flex-shrink: 0; }
+.dd-gami-toast-text { line-height: 1.4; }
+.dd-gami-toast-text small { display: block; font-size: 0.72rem; color: var(--dd-text-light, #8A7E82); font-weight: 400; }
+.dd-gami-toast--xp { border-left: 3px solid #FFD700; }
+.dd-gami-toast--level { border-left: 3px solid #E8485F; background: linear-gradient(135deg, #FFF0F3, #fff); }
+.dd-gami-toast--achievement { border-left: 3px solid #22C55E; background: linear-gradient(135deg, #F0FFF4, #fff); }
+
+/* ── Emotion character states ── */
+.dd-asst-character[data-emotion="happy"]   { animation: ddAsstFloat 2.5s ease-in-out infinite, ddAsstEnter 0.8s cubic-bezier(0.34,1.56,0.64,1) both; }
+.dd-asst-character[data-emotion="excited"] { animation: ddEmotionBounce 0.6s ease 3, ddAsstFloat 2s ease-in-out infinite 1.8s; }
+.dd-asst-character[data-emotion="proud"]   { filter: drop-shadow(0 6px 18px rgba(60,60,60,0.15)) drop-shadow(0 0 12px rgba(255,215,0,0.3)); }
+.dd-asst-character[data-emotion="sad"]     { animation: ddAsstFloat 5s ease-in-out infinite; filter: drop-shadow(0 6px 18px rgba(60,60,60,0.1)) grayscale(0.2); }
+.dd-asst-character[data-emotion="sleepy"]  { animation: ddAsstFloat 6s ease-in-out infinite; opacity: 0.85; }
+.dd-asst-character[data-emotion="love"]    { animation: ddEmotionPulse 1s ease 2, ddAsstFloat 3s ease-in-out infinite 2s; }
+.dd-asst-character[data-emotion="cheering"]{ animation: ddEmotionBounce 0.5s ease 4, ddAsstFloat 2.5s ease-in-out infinite 2s; }
+
+@keyframes ddEmotionBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    30%  { transform: translateY(-18px) scale(1.08); }
+    60%  { transform: translateY(-5px) scale(0.97); }
+}
+@keyframes ddEmotionPulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.12); }
+}
+
+/* ── Gamification header badge ── */
+.dd-gami-header-badge {
+    display: flex; align-items: center; gap: 0.35rem;
+    margin-top: 0.2rem;
+}
+.dd-gami-hb-level {
+    font-size: 0.68rem; font-weight: 700;
+    color: var(--dd-primary, #DB7F8E);
+    background: rgba(219,127,142,0.1);
+    padding: 0.1rem 0.4rem; border-radius: 6px;
+}
+.dd-gami-hb-xp {
+    font-size: 0.65rem; font-weight: 600; color: #B8860B;
+}
+.dd-gami-hb-streak {
+    font-size: 0.65rem; font-weight: 600; color: #E53935;
+}
+
+/* ── Daily Challenge ── */
+.dd-gami-challenge { padding: 0.2rem 0; }
+.dd-gami-challenge-badge {
+    display: inline-block; padding: 0.2rem 0.6rem;
+    background: linear-gradient(135deg, #FFE4B5, #FFD700);
+    border-radius: 8px; font-size: 0.75rem; font-weight: 700;
+    color: #8B6914; margin-bottom: 0.5rem;
+}
+.dd-gami-challenge-type {
+    font-size: 0.7rem; color: var(--dd-text-light, #8A7E82);
+    margin-bottom: 0.3rem;
+}
+.dd-gami-challenge-q {
+    font-size: 0.9rem; font-weight: 600; line-height: 1.5;
+    margin-bottom: 0.6rem; color: var(--dd-text, #3D3235);
+}
+.dd-gami-challenge-input {
+    display: flex; gap: 0.4rem; margin-bottom: 0.4rem;
+}
+.dd-gami-challenge-answer {
+    flex: 1; padding: 0.45rem 0.7rem; border: 1.5px solid var(--dd-border, #E8E0E3);
+    border-radius: 8px; font-size: 0.82rem; font-family: inherit;
+    outline: none; transition: border-color 0.2s;
+}
+.dd-gami-challenge-answer:focus { border-color: var(--dd-primary, #DB7F8E); }
+.dd-gami-challenge-submit {
+    padding: 0.45rem 0.8rem; border: none; border-radius: 8px;
+    background: var(--dd-primary, #DB7F8E); color: #fff;
+    font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    transition: background 0.2s; font-family: inherit;
+}
+.dd-gami-challenge-submit:hover { background: var(--dd-primary-hover, #C96A7D); }
+.dd-gami-challenge-hint {
+    font-size: 0.75rem; color: #B8860B;
+    background: #FFF8EB; padding: 0.3rem 0.6rem;
+    border-radius: 6px; margin-bottom: 0.3rem;
+}
+.dd-gami-challenge-hint-btn {
+    font-size: 0.72rem; color: var(--dd-text-light, #8A7E82);
+    background: none; border: none; cursor: pointer;
+    text-decoration: underline; font-family: inherit;
+    margin-bottom: 0.3rem;
+}
+.dd-gami-challenge-reward {
+    font-size: 0.68rem; color: #B8860B; font-weight: 500;
+}
+
+/* ── Mini Quiz ── */
+.dd-gami-miniquiz { padding: 0.2rem 0; }
+.dd-gami-miniquiz-badge {
+    display: inline-block; padding: 0.2rem 0.6rem;
+    background: linear-gradient(135deg, #E8F0FE, #B5CFFF);
+    border-radius: 8px; font-size: 0.75rem; font-weight: 700;
+    color: #1A56DB; margin-bottom: 0.5rem;
+}
+.dd-gami-miniquiz-q {
+    font-size: 0.88rem; font-weight: 600; line-height: 1.5;
+    margin-bottom: 0.6rem;
+}
+.dd-gami-miniquiz-choices {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem;
+    margin-bottom: 0.4rem;
+}
+.dd-gami-miniquiz-choice {
+    padding: 0.5rem 0.6rem; border: 1.5px solid var(--dd-border, #E8E0E3);
+    border-radius: 10px; background: #fff; cursor: pointer;
+    font-size: 0.85rem; font-family: inherit; transition: all 0.2s;
+    text-align: center;
+}
+.dd-gami-miniquiz-choice:hover:not(.is-disabled) {
+    border-color: var(--dd-primary, #DB7F8E);
+    background: var(--dd-bg, #FAF7F8);
+    transform: translateY(-1px);
+}
+.dd-gami-miniquiz-choice.is-correct {
+    background: #DCFCE7; border-color: #22C55E; color: #166534;
+}
+.dd-gami-miniquiz-choice.is-wrong {
+    background: #FEE2E2; border-color: #EF4444; color: #991B1B;
+}
+.dd-gami-miniquiz-choice.is-disabled { cursor: default; opacity: 0.7; }
+.dd-gami-miniquiz-reward {
+    font-size: 0.68rem; color: #1A56DB; font-weight: 500;
+}
+.dd-gami-again-btn {
+    padding: 0.4rem 0.85rem; background: var(--dd-bg, #FAF7F8);
+    border: 1px solid var(--dd-border, #E8E0E3); border-radius: 20px;
+    font-size: 0.78rem; font-weight: 500; cursor: pointer;
+    font-family: inherit; transition: all 0.2s;
+}
+.dd-gami-again-btn:hover {
+    background: var(--dd-primary, #DB7F8E); color: #fff;
+    border-color: var(--dd-primary, #DB7F8E);
+}
+
+/* ── Stats Dashboard ── */
+.dd-gami-stats { padding: 0.2rem 0; }
+.dd-gami-stats-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 0.5rem;
+}
+.dd-gami-stats-level { font-size: 0.88rem; font-weight: 700; }
+.dd-gami-stats-xp { font-size: 0.82rem; font-weight: 600; color: #B8860B; }
+.dd-gami-xp-bar {
+    position: relative; height: 18px; background: var(--dd-bg, #FAF7F8);
+    border-radius: 10px; overflow: hidden; margin-bottom: 0.6rem;
+    border: 1px solid var(--dd-border, #E8E0E3);
+}
+.dd-gami-xp-fill {
+    height: 100%; border-radius: 10px;
+    background: linear-gradient(90deg, #FFD700, #FF8C00);
+    transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1);
+}
+.dd-gami-xp-label {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.62rem; font-weight: 600; color: #333;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+}
+.dd-gami-stats-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.35rem;
+    margin-bottom: 0.6rem;
+}
+.dd-gami-stat-card {
+    text-align: center; padding: 0.4rem 0.25rem;
+    background: var(--dd-bg, #FAF7F8); border-radius: 8px;
+    border: 1px solid var(--dd-border, #E8E0E3);
+}
+.dd-gami-stat-num { display: block; font-size: 0.82rem; font-weight: 700; }
+.dd-gami-stat-label { display: block; font-size: 0.6rem; color: var(--dd-text-light, #8A7E82); margin-top: 0.1rem; }
+
+/* ── Calendar ── */
+.dd-gami-calendar-title, .dd-gami-ach-title {
+    font-size: 0.78rem; font-weight: 700; margin-bottom: 0.3rem;
+    color: var(--dd-text, #3D3235);
+}
+.dd-gami-calendar {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+    margin-bottom: 0.6rem;
+}
+.dd-gami-cal-day {
+    width: 26px; height: 26px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.58rem; color: var(--dd-text-light, #8A7E82);
+    background: var(--dd-bg, #FAF7F8); border: 1px solid transparent;
+}
+.dd-gami-cal-day.is-active {
+    background: #DCFCE7; color: #166534; font-weight: 700;
+    border-color: #22C55E;
+}
+.dd-gami-cal-day.is-today {
+    border-color: var(--dd-primary, #DB7F8E); font-weight: 700;
+}
+
+/* ── Achievements ── */
+.dd-gami-ach-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.3rem;
+}
+.dd-gami-ach {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 0.4rem 0.25rem; border-radius: 8px;
+    background: var(--dd-bg, #FAF7F8); border: 1px solid var(--dd-border, #E8E0E3);
+    opacity: 0.35; filter: grayscale(1); transition: all 0.3s;
+}
+.dd-gami-ach.is-unlocked {
+    opacity: 1; filter: none;
+    background: linear-gradient(135deg, #FFF8EB, #FFFDF5);
+    border-color: #FFD700;
+}
+.dd-gami-ach-icon { font-size: 1.1rem; }
+.dd-gami-ach-name { font-size: 0.6rem; font-weight: 600; text-align: center; margin-top: 0.15rem; }
+
+/* ── Combo toast ── */
+.dd-gami-toast--combo {
+    background: linear-gradient(135deg, #FFF8EB, #FFF);
+    border-left-width: 4px;
+    font-weight: 700;
+}
+.dd-gami-toast--freeze { border-left: 3px solid #38BDF8; background: linear-gradient(135deg, #F0F9FF, #fff); }
+.dd-gami-toast--shop { border-left: 3px solid #A855F7; background: linear-gradient(135deg, #FAF5FF, #fff); }
+
+/* ── XP Shop ── */
+.dd-gami-shop { padding: 0.2rem 0; }
+.dd-gami-shop-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 0.4rem;
+}
+.dd-gami-shop-badge {
+    display: inline-block; padding: 0.2rem 0.6rem;
+    background: linear-gradient(135deg, #E8D5F5, #D8B4FE);
+    border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #6B21A8;
+}
+.dd-gami-shop-balance {
+    font-size: 0.78rem; font-weight: 700; color: #B8860B;
+    background: #FFF8EB; padding: 0.15rem 0.5rem; border-radius: 6px;
+}
+.dd-gami-shop-inventory {
+    font-size: 0.72rem; color: var(--dd-text-light, #8A7E82);
+    margin-bottom: 0.5rem; padding: 0.3rem 0.5rem;
+    background: var(--dd-bg, #FAF7F8); border-radius: 6px;
+}
+.dd-gami-shop-grid {
+    display: flex; flex-direction: column; gap: 0.35rem;
+}
+.dd-gami-shop-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.5rem 0.6rem; border-radius: 10px;
+    border: 1px solid var(--dd-border, #E8E0E3);
+    background: #fff; transition: border-color 0.2s;
+}
+.dd-gami-shop-item:hover { border-color: #D8B4FE; }
+.dd-gami-shop-icon { font-size: 1.3rem; flex-shrink: 0; width: 32px; text-align: center; }
+.dd-gami-shop-info { flex: 1; min-width: 0; }
+.dd-gami-shop-name { font-size: 0.78rem; font-weight: 700; color: var(--dd-text, #3D3235); }
+.dd-gami-shop-desc { font-size: 0.65rem; color: var(--dd-text-light, #8A7E82); margin-top: 0.1rem; }
+.dd-gami-shop-buy {
+    padding: 0.3rem 0.7rem; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, #A855F7, #7C3AED); color: #fff;
+    font-size: 0.72rem; font-weight: 700; cursor: pointer;
+    transition: all 0.2s; flex-shrink: 0; font-family: inherit;
+}
+.dd-gami-shop-buy:hover:not([disabled]) { transform: scale(1.05); box-shadow: 0 2px 8px rgba(168,85,247,0.4); }
+.dd-gami-shop-buy.is-locked {
+    background: #E5E7EB; color: #9CA3AF; cursor: not-allowed;
+}
+.dd-gami-shop-buy.is-owned {
+    background: #DCFCE7; color: #166534; cursor: default;
+}
+
+/* ── Legendary Challenge ── */
+.dd-gami-legendary { padding: 0.2rem 0; }
+.dd-gami-legendary-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 0.5rem;
+}
+.dd-gami-legendary-badge {
+    display: inline-block; padding: 0.2rem 0.6rem;
+    background: linear-gradient(135deg, #FFD700, #F59E0B);
+    border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #78350F;
+}
+.dd-gami-legendary-score {
+    font-size: 0.75rem; font-weight: 700; color: #166534;
+    background: #DCFCE7; padding: 0.15rem 0.5rem; border-radius: 6px;
+}
+.dd-gami-legendary-q {
+    font-size: 0.88rem; font-weight: 600; line-height: 1.5;
+    margin-bottom: 0.6rem; color: var(--dd-text, #3D3235);
+    padding: 0.5rem 0.6rem; background: #FFFBEB;
+    border-radius: 8px; border-left: 3px solid #F59E0B;
+}
+.dd-gami-legendary-hint-btn {
+    font-size: 0.72rem; color: #B8860B;
+    background: #FFF8EB; border: 1px solid #FDE68A;
+    border-radius: 6px; padding: 0.3rem 0.6rem;
+    cursor: pointer; font-family: inherit; margin-top: 0.3rem;
+    transition: background 0.2s;
+}
+.dd-gami-legendary-hint-btn:hover:not([disabled]) { background: #FEF3C7; }
+.dd-gami-legendary-hint-btn[disabled] { opacity: 0.5; cursor: default; }
+
+/* ============================================
+   Voice Panel — 음성 우선 인터페이스 (v2.6)
+   ============================================ */
+.dd-asst-voice-panel {
+    position: fixed;
+    right: 16px;
+    bottom: 12px;
+    width: 340px;
+    z-index: 9100;
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 18px 48px rgba(40,40,60,0.22), 0 4px 14px rgba(40,40,60,0.08);
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    animation: ddVoicePanelIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    flex-direction: column;
+}
+body[data-dd-page="lesson"] .dd-asst-voice-panel { bottom: 140px; }
+
+.dd-asst-voice-panel.is-closing { animation: ddVoicePanelOut 0.2s ease both; }
+
+@keyframes ddVoicePanelIn {
+    0% { transform: translateY(40px) scale(0.85); opacity: 0; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes ddVoicePanelOut {
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    100% { transform: translateY(20px) scale(0.92); opacity: 0; }
+}
+
+.dd-voice-header {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.95rem 1rem;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.dd-voice-avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: 2px solid rgba(0,0,0,0.05);
+    background: #fff;
+    flex-shrink: 0;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+}
+.dd-voice-avatar svg { width: 100%; height: 100%; }
+.dd-voice-title { flex: 1; min-width: 0; }
+.dd-voice-name {
+    font-size: 1rem; font-weight: 700;
+    color: var(--dd-text, #3D3235);
+    display: flex; align-items: center; gap: 0.4rem;
+}
+.dd-voice-tag {
+    font-size: 0.65rem; font-weight: 600;
+    background: rgba(0,0,0,0.06);
+    color: #666;
+    padding: 0.12rem 0.45rem;
+    border-radius: 8px;
+    letter-spacing: 0.04em;
+}
+.dd-voice-sub {
+    font-size: 0.72rem; color: #888;
+    margin-top: 0.15rem;
+    line-height: 1.35;
+}
+.dd-voice-close {
+    width: 28px; height: 28px;
+    border: none; background: rgba(0,0,0,0.05);
+    border-radius: 50%;
+    cursor: pointer; font-size: 1.1rem;
+    color: #666;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+}
+.dd-voice-close:hover { background: rgba(0,0,0,0.1); color: #333; }
+
+/* Stage */
+.dd-voice-stage {
+    padding: 1.4rem 1.2rem 1.2rem;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 1rem;
+    background: linear-gradient(180deg, #FBFBFD 0%, #fff 100%);
+}
+.dd-voice-bubble {
+    width: 100%;
+    background: #F4F4F8;
+    border-radius: 16px;
+    padding: 0.85rem 1rem;
+    min-height: 60px;
+    max-height: 140px;
+    overflow-y: auto;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--dd-text, #3D3235);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+}
+.dd-voice-bubble-text { display: block; }
+
+.dd-voice-mic {
+    width: 96px; height: 96px;
+    border-radius: 50%;
+    border: 3px solid var(--dd-primary, #DB7F8E);
+    background: #fff;
+    color: var(--dd-primary, #DB7F8E);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.25s;
+    box-shadow: 0 6px 20px rgba(60,60,60,0.12);
+}
+.dd-voice-mic svg { width: 38px; height: 38px; }
+.dd-voice-mic:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(60,60,60,0.18); }
+.dd-voice-mic.is-listening {
+    background: var(--dd-primary, #DB7F8E);
+    color: #fff;
+    animation: ddVoiceMicPulse 1.4s ease-in-out infinite;
+}
+@keyframes ddVoiceMicPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(219,127,142,0.45), 0 6px 20px rgba(60,60,60,0.12); }
+    50%      { box-shadow: 0 0 0 18px rgba(219,127,142,0), 0 6px 20px rgba(60,60,60,0.12); }
+}
+
+.dd-voice-state {
+    font-size: 0.78rem;
+    color: #888;
+    min-height: 1.2em;
+    text-align: center;
+}
+
+/* Actions row */
+.dd-voice-actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+    padding: 0.7rem 0.8rem 0.95rem;
+    background: #FAFAFC;
+    border-top: 1px solid rgba(0,0,0,0.04);
+}
+.dd-voice-action {
+    display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+    padding: 0.55rem 0.3rem;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    color: #555;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+.dd-voice-action:hover {
+    background: #fff;
+    border-color: rgba(0,0,0,0.12);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+}
+.dd-voice-action-ic { font-size: 1.1rem; line-height: 1; }
+
+/* Coachmark for voice panel */
+.dd-voice-coach-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 9500;
+    animation: ddVoiceCoachIn 0.2s ease;
+}
+@keyframes ddVoiceCoachIn { from { opacity: 0; } to { opacity: 1; } }
+.dd-voice-coach-spot {
+    position: fixed;
+    border-radius: 16px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.55), 0 0 24px rgba(255,255,255,0.4);
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+.dd-voice-coach-tip {
+    position: fixed;
+    width: 280px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 0.9rem 1rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    font-size: 0.84rem;
+    color: var(--dd-text, #3D3235);
+    line-height: 1.5;
+}
+.dd-voice-coach-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.4rem; }
+.dd-voice-coach-body { color: #555; margin-bottom: 0.7rem; }
+.dd-voice-coach-body b { color: var(--dd-primary, #DB7F8E); }
+.dd-voice-coach-footer {
+    display: flex; align-items: center; gap: 0.5rem;
+    border-top: 1px solid rgba(0,0,0,0.06);
+    padding-top: 0.55rem;
+}
+.dd-voice-coach-count { font-size: 0.72rem; color: #999; margin-right: auto; }
+.dd-voice-coach-skip {
+    background: none; border: none;
+    font-size: 0.78rem; color: #888;
+    cursor: pointer; font-family: inherit;
+    padding: 0.3rem 0.5rem;
+}
+.dd-voice-coach-skip:hover { color: #333; }
+.dd-voice-coach-next {
+    background: var(--dd-primary, #DB7F8E);
+    color: #fff; border: none;
+    padding: 0.4rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.78rem; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    transition: all 0.2s;
+}
+.dd-voice-coach-next:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(219,127,142,0.3); }
+
+/* Mobile */
+@media (max-width: 480px) {
+    .dd-asst-voice-panel { width: calc(100vw - 1rem); right: 0.5rem; bottom: 0.5rem; }
+    body[data-dd-page="lesson"] .dd-asst-voice-panel { bottom: 128px; }
+    .dd-voice-mic { width: 84px; height: 84px; }
+    .dd-voice-mic svg { width: 32px; height: 32px; }
+    .dd-voice-coach-tip { width: calc(100vw - 2rem); }
+}

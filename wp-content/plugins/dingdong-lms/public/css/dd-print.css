@@ -1,0 +1,326 @@
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 1.2cm;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body {
+        font-size: 11pt;
+        color: #000;
+        background: #fff;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* --- 공통 숨김: 탭/컨트롤/FAB/AI/모달/네비/叮叮 도우미/레일 등 학습 외 UI 전부 --- */
+    .dd-tabs,
+    .dd-slide-controls,
+    .dd-print-fab,
+    .dd-ai-panel,
+    .dd-ai-floating,
+    .dd-key-modal-overlay,
+    .dd-topbar,
+    .dd-section-nav-sidebar,
+    .dd-section-nav,
+    .dd-feature-rail,
+    .dd-asst-character,
+    .dd-asst-bubble,
+    .dd-asst-panel,
+    .dd-asst-voice-panel,
+    .dd-welcome-screen,
+    .dd-top-btn,
+    .dd-key-fab,
+    #dd-key-fab,
+    #dd-key-floating,
+    .dd-progress-widget,
+    .dd-coach-overlay,
+    .dd-voice-coach-overlay,
+    .dd-gami-toasts,
+    .dd-pron-feedback,
+    .dd-pron-mic,
+    .dd-ke-btn,
+    .dd-ke-actions {
+        display: none !important;
+    }
+
+    /* === 기본 모드: 슬라이드 인쇄 === */
+    .dd-tab-panel:not(.dd-slides-panel) {
+        display: none !important;
+    }
+
+    /* 슬라이드 PDF 모드 시 모든 슬라이드 강제 표시 */
+    body.dd-print-slides .dd-slide,
+    body.dd-print-slides .dd-slide--print-show {
+        display: block !important;
+    }
+    body.dd-print-slides .dd-slides-panel { display: block !important; }
+    body.dd-print-slides .dd-tab-panel:not(.dd-slides-panel) { display: none !important; }
+
+    .dd-lesson-wrapper {
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    /* --- 헤더 (표지 페이지) --- */
+    .dd-lesson-header {
+        page-break-after: always;
+        padding: 5cm 3cm;
+        text-align: center;
+        border: none;
+        background: #fff;
+    }
+
+    .dd-lesson-header h1 {
+        font-size: 26pt;
+        margin-bottom: 0.5cm;
+    }
+
+    .dd-lesson-header .dd-course-title {
+        font-size: 13pt;
+        color: #555;
+    }
+
+    .dd-lesson-header .dd-level-badge {
+        font-size: 10pt;
+        border: 1px solid #ccc;
+        padding: 0.15cm 0.5cm;
+        border-radius: 4pt;
+    }
+
+    /* --- 슬라이드 패널 --- */
+    .dd-slides-panel {
+        display: block !important;
+    }
+
+    .dd-slides {
+        display: block;
+    }
+
+    .dd-slide {
+        display: block !important;
+        page-break-after: always;
+        page-break-inside: avoid;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+        min-height: auto;
+        background: #fff;
+        border-radius: 0;
+    }
+
+    .dd-slide:last-child {
+        page-break-after: auto;
+    }
+
+    /* --- 슬라이드 헤더 --- */
+    .dd-slide-header {
+        padding: 0.5cm 0.8cm;
+        border-radius: 0;
+        margin-bottom: 0.3cm;
+        page-break-inside: avoid;
+    }
+
+    .dd-slide-number {
+        width: 28pt;
+        height: 28pt;
+        min-width: 28pt;
+        font-size: 14pt;
+        color: #fff;
+    }
+
+    .dd-slide-header h2 {
+        font-size: 18pt;
+        margin-bottom: 0.1cm;
+    }
+
+    .dd-slide-header .dd-slide-subtitle {
+        font-size: 11pt;
+        margin-bottom: 0;
+    }
+
+    /* --- 슬라이드 일러스트 --- */
+    .dd-slide-illustration {
+        padding: 0 0.8cm;
+        margin-bottom: 0.3cm;
+    }
+
+    .dd-slide-illustration img {
+        max-height: 5cm;
+        border-radius: 6pt;
+    }
+
+    /* --- 불릿 --- */
+    .dd-slide-section {
+        padding: 0.3cm 0.8cm;
+    }
+
+    .dd-slide-section h4 {
+        font-size: 12pt;
+        margin-bottom: 0.2cm;
+    }
+
+    .dd-slide .dd-slide-bullets li {
+        font-size: 11pt;
+        padding: 0.15cm 0 0.15cm 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .dd-bullet-marker {
+        font-size: 9pt;
+        width: 18pt;
+        height: 18pt;
+        min-width: 18pt;
+    }
+
+    /* --- 예문 --- */
+    .dd-slide-examples {
+        border-radius: 6pt;
+        padding: 0.3cm 0.5cm;
+        margin: 0.2cm 0.8cm;
+    }
+
+    .dd-slide-example-card {
+        padding: 0.2cm 0;
+    }
+
+    .dd-ex-zh {
+        font-size: 12pt;
+    }
+
+    .dd-ex-pinyin {
+        font-size: 9pt;
+    }
+
+    .dd-ex-ko {
+        font-size: 10pt;
+    }
+
+    /* --- 어휘 카드 --- */
+    .dd-vocab-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120pt, 1fr));
+        gap: 0.3cm;
+    }
+
+    .dd-vocab-card {
+        padding: 0.25cm 0.4cm;
+        border-radius: 4pt;
+        font-size: 10pt;
+        page-break-inside: avoid;
+    }
+
+    .dd-vc-zh {
+        font-size: 13pt;
+    }
+
+    .dd-vc-pinyin {
+        font-size: 8pt;
+    }
+
+    .dd-vc-ko {
+        font-size: 9pt;
+    }
+
+    .dd-vc-hsk {
+        font-size: 7pt;
+    }
+
+    /* --- 팁 박스 --- */
+    .dd-slide-tip {
+        margin: 0.2cm 0.8cm 0.3cm;
+        padding: 0.3cm 0.5cm;
+        page-break-inside: avoid;
+    }
+
+    .dd-slide-tip p {
+        font-size: 10pt;
+    }
+
+    /* --- 슬라이드 보강 섹션 (자가학습) 압축 --- */
+    .dd-slide-keypoint,
+    .dd-slide-usage,
+    .dd-slide-mistake,
+    .dd-slide-practice {
+        margin: 0.15cm 0.8cm;
+        padding: 0.25cm 0.45cm;
+        page-break-inside: avoid;
+    }
+    .dd-slide-keypoint h4,
+    .dd-slide-usage h4,
+    .dd-slide-mistake h4,
+    .dd-slide-practice h4 {
+        font-size: 9.5pt;
+        margin: 0 0 0.1cm;
+    }
+    .dd-slide-keypoint p,
+    .dd-slide-usage p,
+    .dd-slide-mistake p,
+    .dd-practice-q {
+        font-size: 9.5pt;
+        line-height: 1.45;
+        margin: 0;
+    }
+    /* PDF에서는 정답 토글 펼쳐 보이게 */
+    .dd-practice-answer { padding: 0.15cm 0.3cm; border-color: #ccc; }
+    .dd-practice-answer summary { display: none; }
+    .dd-practice-answer-body p { font-size: 9pt; margin: 0.05cm 0; }
+    .dd-pa-zh { font-size: 11pt; }
+
+    /* --- 링크 색상 제거 --- */
+    a {
+        color: #000;
+        text-decoration: none;
+    }
+
+    /* ===================================================
+       슬라이드 PDF 모드 — 1슬라이드 1페이지 강제
+       (body.dd-print-slides일 때만 적용)
+       =================================================== */
+    body.dd-print-slides .dd-slide {
+        page-break-after: always;
+        page-break-inside: avoid;
+        break-after: page;
+        break-inside: avoid;
+        height: auto;
+        max-height: 26cm;     /* A4 가로 21cm × 세로 29.7cm → 여백 빼고 ~26cm */
+        overflow: hidden;
+        display: flex !important;
+        flex-direction: column;
+    }
+    body.dd-print-slides .dd-slide:last-child {
+        page-break-after: auto;
+    }
+    /* 가로 A4의 가용 높이는 약 17cm — 컴팩트한 폰트로 */
+    body.dd-print-slides .dd-slide-header { padding: 0.4cm 0.7cm; margin-bottom: 0.2cm; }
+    body.dd-print-slides .dd-slide-header h2 { font-size: 16pt; margin: 0; }
+    body.dd-print-slides .dd-slide-header .dd-slide-subtitle { font-size: 10pt; }
+    body.dd-print-slides .dd-slide-section { padding: 0.2cm 0.7cm; }
+    body.dd-print-slides .dd-slide-section h4 { font-size: 10pt; margin: 0 0 0.1cm; }
+    body.dd-print-slides .dd-slide-bullets li { font-size: 9.5pt; padding: 0.05cm 0; border: none; }
+    body.dd-print-slides .dd-vc-zh { font-size: 12pt; }
+    body.dd-print-slides .dd-ex-zh { font-size: 11pt; }
+    body.dd-print-slides .dd-slide-tip { margin: 0.15cm 0.7cm; padding: 0.2cm 0.4cm; }
+    body.dd-print-slides .dd-slide-tip p { font-size: 9pt; }
+    /* 보강 섹션도 더 압축 */
+    body.dd-print-slides .dd-slide-keypoint,
+    body.dd-print-slides .dd-slide-usage,
+    body.dd-print-slides .dd-slide-mistake,
+    body.dd-print-slides .dd-slide-practice {
+        margin: 0.1cm 0.7cm; padding: 0.18cm 0.35cm;
+    }
+    body.dd-print-slides .dd-slide-keypoint p,
+    body.dd-print-slides .dd-slide-usage p,
+    body.dd-print-slides .dd-slide-mistake p,
+    body.dd-print-slides .dd-practice-q { font-size: 9pt; line-height: 1.4; }
+    body.dd-print-slides .dd-vocab-grid { gap: 0.2cm; }
+    body.dd-print-slides .dd-vocab-card { padding: 0.2cm 0.3cm; }
+
+    /* (옛 학습 내용 PDF 모드 body.dd-print-content는 폐기됨 — 슬라이드 PDF로 통합) */
+}

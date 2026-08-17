@@ -1,0 +1,351 @@
+/* ============================================
+   중국어 노래 학습 (lesson_type = song)
+   MV 임베드 + 가사 싱크 뷰어 전용 스타일.
+   ※ AI 학습송(SUNO) 플레이어 스타일은 기능과 함께 제거됨.
+   ============================================ */
+
+/* ============================================================
+   가사 싱크 (dd-song-lyricsync.js가 .dd-lyricsync-on 부여)
+   영상 재생 시각에 맞춰 현재 가사 줄을 글래스모피즘으로 하이라이트.
+   ============================================================ */
+.dd-song-lyrics-list.dd-lyricsync-on {
+    max-height: 440px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    padding: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+.dd-song-lyrics-list.dd-lyricsync-on::-webkit-scrollbar { width: 8px; }
+.dd-song-lyrics-list.dd-lyricsync-on::-webkit-scrollbar-thumb {
+    background: rgba(219,127,142,0.35); border-radius: 8px;
+}
+
+/* 평상시: 흐리게 + 클릭 가능 */
+.dd-song-lyrics-list.dd-lyricsync-on .dd-song-lyrics-line {
+    opacity: 0.5;
+    cursor: pointer;
+    border-radius: 14px;
+    border-bottom-color: transparent;
+    transition: opacity 0.35s ease, background 0.35s ease,
+                transform 0.35s cubic-bezier(0.34,1.56,0.64,1),
+                box-shadow 0.35s ease;
+}
+.dd-song-lyrics-list.dd-lyricsync-on .dd-song-lyrics-line:hover { opacity: 0.85; }
+
+/* 현재 부르는 줄: 글래스모피즘 발광 */
+.dd-song-lyrics-list.dd-lyricsync-on .dd-song-lyrics-line.is-lyricsync-active {
+    opacity: 1;
+    background: linear-gradient(135deg, #FFF1F5, #FFE6EE);
+    border: 1px solid rgba(219,127,142,0.40);
+    box-shadow: 0 4px 14px rgba(219,127,142,0.18);
+    transform: scale(1.015);
+}
+.dd-song-lyrics-list.dd-lyricsync-on .dd-song-lyrics-line.is-lyricsync-active .dd-song-line-zh {
+    color: var(--dd-primary, #DB7F8E);
+    font-weight: 700;
+    text-shadow: 0 1px 14px rgba(219,127,142,0.40);
+}
+.dd-song-lyrics-list.dd-lyricsync-on .dd-song-lyrics-line.is-lyricsync-active .dd-song-lyrics-num {
+    background: var(--dd-primary, #DB7F8E);
+    color: #fff;
+}
+
+@media (max-width: 600px) {
+    .dd-song-lyrics-list.dd-lyricsync-on { max-height: 320px; }
+    .dd-song-lyrics-list.dd-lyricsync-on .dd-song-lyrics-line.is-lyricsync-active { transform: scale(1.02); }
+}
+
+/* ============================================================
+   노래 강좌 음악 플레이어 (liquid glass) — 영상 좌 / 가사 우 / 재생바 하단
+   ============================================================ */
+/* 노래강좌는 2단 플레이어(영상+가사) 때문에 본문 폭을 살짝 넓게 — 양옆 여백 과다 방지, 탭바·섹션 함께 정렬 */
+.dd-lesson-wrapper[data-lesson-type="song"] { max-width: 1140px; }
+
+/* 좌측 섹션 네비: 넓어진 1140px 본문 기준으로 위치 재계산 (기본은 900px 기준) */
+.dd-lesson-wrapper[data-lesson-type="song"] .dd-section-nav {
+    left: max(0.75rem, calc((100vw - 1140px) / 2 - 140px));
+}
+
+.dd-lyricsync {
+    position: relative;
+    border-radius: 28px;
+    padding: 1.25rem;
+    margin: 0 0 1.75rem;   /* 다른 섹션(탭바·핵심표현)과 동일 너비로 정렬 — 우측 돌출 제거 */
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(255,255,255,0.62), rgba(255,255,255,0.30));
+    -webkit-backdrop-filter: blur(30px) saturate(1.9);
+    backdrop-filter: blur(30px) saturate(1.9);
+    border: 1.5px solid rgba(255,255,255,0.8);
+    box-shadow:
+        0 30px 80px rgba(150,140,200,0.30),
+        0 10px 30px rgba(219,127,142,0.14),
+        inset 0 1.5px 0 rgba(255,255,255,0.95),
+        inset 0 0 70px rgba(255,255,255,0.30);
+}
+@media (max-width: 1024px) {
+    .dd-lyricsync { margin-right: 0; }
+}
+/* 파스텔 오로라 글로우 (liquid 느낌, 천천히 흐름) */
+.dd-lyricsync::before {
+    content: '';
+    position: absolute; inset: -55%; z-index: 0;
+    background:
+        radial-gradient(circle at 14% 16%, rgba(219,127,142,0.40), transparent 38%),
+        radial-gradient(circle at 86% 24%, rgba(129,140,248,0.34), transparent 40%),
+        radial-gradient(circle at 62% 90%, rgba(96,165,250,0.30), transparent 42%),
+        radial-gradient(circle at 32% 72%, rgba(244,114,182,0.26), transparent 40%);
+    filter: blur(34px);
+    pointer-events: none;
+    animation: ddLyricsyncAurora 16s ease-in-out infinite alternate;
+}
+@keyframes ddLyricsyncAurora {
+    0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+    50%  { transform: translate(3%, -2.5%) scale(1.14) rotate(7deg); }
+    100% { transform: translate(-2.5%, 3%) scale(1.06) rotate(-6deg); }
+}
+/* 상단 광택 하이라이트 */
+.dd-lyricsync::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 42%; z-index: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.45), transparent);
+    pointer-events: none;
+}
+.dd-lyricsync > * { position: relative; z-index: 1; }
+
+.dd-lyricsync .dd-song-meta-bar { margin-bottom: 0.7rem; gap: 0.4rem; }
+.dd-lyricsync .dd-song-meta-chip { font-size: 0.76rem; padding: 0.28rem 0.7rem; }
+
+/* 스테이지: 영상 + 가사 */
+.dd-lyricsync-stage {
+    display: block;                      /* 영상만 보유 — 가사는 재생바 아래로 분리 */
+}
+.dd-lyricsync-video {
+    max-width: 720px;                    /* 풀폭 영상이 과하게 커지지 않게 중앙 정렬 */
+    margin: 0 auto;
+    min-width: 0;
+}
+.dd-lyricsync-video .dd-song-mv-iframe {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;       /* 비율 기반 높이 (YouTube 16:9) */
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1.5px solid rgba(255,255,255,0.65);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.2) inset;
+    background: #000;
+}
+.dd-lyricsync-video .dd-song-mv-iframe iframe {
+    position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
+}
+
+/* 가사 패널 — 재생바 아래 풀폭, 큰 글씨 + 내부 스크롤 (glass) */
+.dd-lyricsync-lyrics {
+    width: 100%;
+    margin-top: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    border-radius: 18px;
+    padding: 0.6rem 0.7rem 0.7rem;
+    background: rgba(255,255,255,0.45);
+    -webkit-backdrop-filter: blur(10px) saturate(1.4);
+    backdrop-filter: blur(10px) saturate(1.4);
+    border: 1.5px solid rgba(255,255,255,0.6);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+}
+.dd-lyricsync-lyrics .dd-song-lyrics-header { flex: none; }
+
+/* 가사 속 핵심어휘 하이라이트 — 탭하면 뜻 팝업 + 단어장 저장 */
+.dd-lyric-kw {
+    cursor: pointer;
+    color: var(--dd-primary, #DB7F8E);
+    font-weight: 700;
+    background: linear-gradient(180deg, transparent 62%, rgba(219,127,142,0.28) 62%);
+    border-radius: 4px;
+    padding: 0 1px;
+    transition: background 0.18s, color 0.18s;
+    -webkit-tap-highlight-color: transparent;
+}
+.dd-lyric-kw:hover,
+.dd-lyric-kw:focus-visible {
+    background: rgba(219,127,142,0.22);
+    outline: none;
+}
+.dd-lyric-kw.is-saved {
+    color: #2f9e6e;
+    background: linear-gradient(180deg, transparent 62%, rgba(47,158,110,0.26) 62%);
+}
+.dd-lyric-kw.is-saved::after {
+    content: '✓';
+    font-size: 0.7em;
+    vertical-align: super;
+    margin-left: 1px;
+    opacity: 0.85;
+}
+
+/* 노래방 빈칸 모드 — 버튼으로 켤 때만 (학습자 주도) */
+.dd-karaoke-toggle {
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.26rem 0.72rem;
+    border-radius: 999px;
+    border: 1.5px solid rgba(219,127,142,0.5);
+    background: rgba(255,255,255,0.5);
+    color: var(--dd-primary, #DB7F8E);
+    cursor: pointer;
+    transition: all 0.18s;
+}
+.dd-karaoke-toggle:hover { background: rgba(219,127,142,0.14); }
+.dd-karaoke-toggle.is-active {
+    background: var(--dd-primary, #DB7F8E);
+    color: #fff;
+    border-color: var(--dd-primary, #DB7F8E);
+    box-shadow: 0 2px 10px rgba(219,127,142,0.35);
+}
+
+/* 빈칸 모드 ON: 핵심어휘를 빈칸으로 (탭하면 정답 공개) */
+.dd-karaoke-blank .dd-lyric-kw:not(.is-revealed) {
+    color: transparent !important;
+    background: rgba(219,127,142,0.12);
+    border-bottom: 2px dashed var(--dd-primary, #DB7F8E);
+    border-radius: 5px;
+    min-width: 1.5em;
+    text-align: center;
+}
+.dd-karaoke-blank .dd-lyric-kw:not(.is-revealed):hover {
+    background: rgba(219,127,142,0.24);
+}
+/* 빈칸 상태에선 저장 ✓ 숨김 (정답 유출 방지) */
+.dd-karaoke-blank .dd-lyric-kw:not(.is-revealed).is-saved::after { content: ''; }
+/* 공개된 정답: 잠깐 강조 */
+.dd-lyric-kw.is-revealed { animation: ddKwReveal 0.35s ease; }
+@keyframes ddKwReveal {
+    from { background: rgba(219,127,142,0.5); }
+    to   { background: linear-gradient(180deg, transparent 62%, rgba(219,127,142,0.28) 62%); }
+}
+
+/* 드라마 장면 자막 안내 문구 */
+.dd-song-lyrics-hint {
+    font-size: 0.78rem;
+    color: var(--dd-text-soft, #8a8aa0);
+    font-weight: 500;
+}
+.dd-lyricsync-lyrics .dd-song-lyrics-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: clamp(300px, 50vh, 560px);  /* 풀폭에서 여러 줄 + 내부 스크롤 */
+    overflow-y: auto;
+}
+/* 풀폭이라 가사 글씨를 키워 가독성 향상 */
+.dd-lyricsync-lyrics .dd-song-line-zh { font-size: 1.18rem; }
+.dd-lyricsync-lyrics .dd-song-line-pinyin { font-size: 0.92rem; }
+.dd-lyricsync-lyrics .dd-song-line-ko { font-size: 0.92rem; }
+
+/* 커스텀 재생바 (liquid glass pill) */
+.dd-lyricsync-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    margin-top: 1rem;
+    padding: 0.55rem 1.1rem;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.55);
+    -webkit-backdrop-filter: blur(14px) saturate(1.5);
+    backdrop-filter: blur(14px) saturate(1.5);
+    border: 1.5px solid rgba(255,255,255,0.7);
+    box-shadow: 0 8px 24px rgba(150,140,200,0.18), inset 0 1.5px 0 rgba(255,255,255,0.9);
+}
+.dd-kbar-btn {
+    flex: none;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    border: none; cursor: pointer;
+    display: grid; place-items: center;
+    color: #fff;
+    background: linear-gradient(135deg, #E8839B, #DB7F8E);
+    box-shadow: 0 6px 16px rgba(219,127,142,0.45);
+    transition: transform 0.15s ease;
+}
+.dd-kbar-btn:hover { transform: scale(1.07); }
+.dd-kbar-ic { display: block; }
+.dd-kbar-ic-pause { display: none; }
+.dd-lyricsync-bar.is-playing .dd-kbar-ic-play { display: none; }
+.dd-lyricsync-bar.is-playing .dd-kbar-ic-pause { display: block; }
+.dd-kbar-time {
+    flex: none;
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    color: #7a6a6f;
+    min-width: 40px;
+}
+.dd-kbar-dur { text-align: right; }
+.dd-kbar-track {
+    position: relative;
+    flex: 1 1 auto;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(219,127,142,0.18);
+    cursor: pointer;
+}
+.dd-kbar-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #E8839B, #DB7F8E);
+}
+.dd-kbar-thumb {
+    position: absolute; top: 50%; left: 0;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(219,127,142,0.6);
+    transform: translate(-50%, -50%);
+    transition: opacity 0.2s;
+}
+
+/* 모바일: 영상 풀폭 + 가사 스크롤 높이 축소 */
+@media (max-width: 820px) {
+    .dd-lyricsync-video { max-width: 100%; }
+    .dd-lyricsync-lyrics .dd-song-lyrics-list { max-height: 320px; }
+}
+
+/* ── B. 노래 강의도 우측 기능 레일 표시 (사용자 요청) — 숨김 규칙 제거됨 ── */
+
+/* ── 몰입 모드 토글 버튼 (플레이어 우상단) ── */
+.dd-lyricsync-immersive-btn {
+    position: absolute;
+    top: 0.85rem; right: 0.85rem;
+    z-index: 3;
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    border: 1.5px solid rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.55);
+    -webkit-backdrop-filter: blur(12px) saturate(1.4);
+    backdrop-filter: blur(12px) saturate(1.4);
+    color: #9d4b5e;
+    font-size: 0.78rem; font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(150,140,200,0.18);
+    transition: transform 0.15s ease, background 0.2s ease;
+}
+.dd-lyricsync-immersive-btn:hover { transform: translateY(-1px); background: rgba(255,255,255,0.75); }
+.dd-lyricsync-immersive-btn .dd-imm-on,
+.dd-lyricsync-immersive-btn .dd-imm-label-on { display: none; }
+body.dd-lyricsync-immersive .dd-lyricsync-immersive-btn .dd-imm-off,
+body.dd-lyricsync-immersive .dd-lyricsync-immersive-btn .dd-imm-label-off { display: none; }
+body.dd-lyricsync-immersive .dd-lyricsync-immersive-btn .dd-imm-on,
+body.dd-lyricsync-immersive .dd-lyricsync-immersive-btn .dd-imm-label-on { display: inline; }
+
+/* ── A. 몰입 모드: 양옆 네비 숨기고 플레이어 풀블리드 ── */
+body.dd-lyricsync-immersive .dd-section-nav,
+body.dd-lyricsync-immersive .dd-feature-rail,
+body.dd-lyricsync-immersive .dd-feature-rail-toggle { display: none !important; }
+body.dd-lyricsync-immersive .dd-lyricsync {
+    margin-left: calc(-50vw + 50% + 1.25rem);
+    margin-right: calc(-50vw + 50% + 1.25rem);
+}
+/* 몰입 시: 영상 더 크게, 가사 더 길게 (스택 유지) */
+body.dd-lyricsync-immersive .dd-lyricsync-video { max-width: 1040px; }
+body.dd-lyricsync-immersive .dd-lyricsync-lyrics .dd-song-lyrics-list { max-height: clamp(360px, 62vh, 760px); }

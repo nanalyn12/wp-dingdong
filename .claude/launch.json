@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "wordpress",
+      "runtimeExecutable": "studio",
+      "runtimeArgs": ["site", "start", "--skip-browser"],
+      "port": 8883,
+      "autoPort": false
+    }
+  ]
+}

@@ -1,0 +1,1365 @@
+/* Dingdong LMS Admin Styles */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+:root {
+    --dd-accent: #DB7F8E;
+    --dd-accent-hover: #c96e7d;
+    --dd-soft: #FFDBDA;
+    --dd-mid: #EBCCC5;
+    --dd-text: #604D53;
+    --dd-border: #D5C5C8;
+    --dd-bg: #FFF9F9;
+    --dd-white: #FFFFFF;
+    --dd-success: #4CAF50;
+    --dd-error: #E53935;
+    --dd-info: #2196F3;
+    --dd-shadow: 0 2px 12px rgba(96, 77, 83, 0.08);
+    --dd-shadow-hover: 0 6px 20px rgba(219, 127, 142, 0.15);
+    --dd-radius: 16px;
+    --dd-radius-sm: 10px;
+    --dd-transition: all 0.2s ease;
+}
+
+/* ===== Main Wrapper ===== */
+.dd-admin-wrap {
+    font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 20px;
+    color: var(--dd-text);
+    line-height: 1.6;
+}
+
+.dd-admin-wrap * {
+    box-sizing: border-box;
+}
+
+/* ===== Header ===== */
+.dd-admin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 3px solid var(--dd-accent);
+}
+
+.dd-admin-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--dd-text);
+    margin: 0;
+    padding: 0;
+}
+
+.dd-admin-header .dd-header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+/* ===== Stats Bar ===== */
+.dd-stats-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.dd-stat-item {
+    background: var(--dd-white);
+    border: 1px solid var(--dd-border);
+    border-radius: var(--dd-radius-sm);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 180px;
+}
+
+.dd-stat-item .dd-stat-number {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--dd-accent);
+}
+
+.dd-stat-item .dd-stat-label {
+    font-size: 0.85rem;
+    color: var(--dd-text);
+    opacity: 0.8;
+}
+
+/* ===== Cards ===== */
+.dd-card {
+    background: var(--dd-white);
+    border-radius: var(--dd-radius);
+    box-shadow: var(--dd-shadow);
+    padding: 1.5rem;
+    border: 1px solid var(--dd-border);
+    transition: var(--dd-transition);
+}
+
+.dd-card:hover {
+    box-shadow: var(--dd-shadow-hover);
+}
+
+.dd-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.dd-card-header h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--dd-text);
+}
+
+.dd-card-body {
+    font-size: 0.9rem;
+}
+
+/* ===== Card Grid ===== */
+.dd-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 1100px) {
+    .dd-card-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 700px) {
+    .dd-card-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== Course Card ===== */
+.dd-course-card {
+    background: var(--dd-white);
+    border-radius: var(--dd-radius);
+    box-shadow: var(--dd-shadow);
+    border: 1px solid var(--dd-border);
+    overflow: hidden;
+    transition: var(--dd-transition);
+    display: flex;
+    flex-direction: column;
+}
+
+.dd-course-card:hover {
+    box-shadow: var(--dd-shadow-hover);
+    transform: translateY(-2px);
+}
+
+.dd-course-card .dd-course-thumb {
+    height: 120px;
+    background: linear-gradient(135deg, var(--dd-soft) 0%, var(--dd-mid) 50%, var(--dd-accent) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.dd-course-card .dd-course-thumb::after {
+    content: '\1F4DA';
+    font-size: 2.5rem;
+    opacity: 0.6;
+}
+
+.dd-course-card .dd-course-info {
+    padding: 1.25rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.dd-course-card .dd-course-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: var(--dd-text);
+    line-height: 1.4;
+}
+
+.dd-course-card .dd-course-desc {
+    font-size: 0.8rem;
+    color: var(--dd-text);
+    opacity: 0.7;
+    margin-bottom: 0.75rem;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.dd-course-card .dd-course-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.dd-course-card .dd-course-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--dd-border);
+}
+
+/* ===== Buttons ===== */
+.dd-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.25rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: var(--dd-transition);
+    text-decoration: none;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.dd-btn:focus {
+    outline: 2px solid var(--dd-accent);
+    outline-offset: 2px;
+}
+
+.dd-btn-primary {
+    background-color: var(--dd-accent);
+    color: var(--dd-white);
+    border-color: var(--dd-accent);
+}
+
+.dd-btn-primary:hover {
+    background-color: var(--dd-accent-hover);
+    border-color: var(--dd-accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(219, 127, 142, 0.3);
+}
+
+.dd-btn-secondary {
+    background-color: transparent;
+    color: var(--dd-accent);
+    border-color: var(--dd-accent);
+}
+
+.dd-btn-secondary:hover {
+    background-color: var(--dd-soft);
+    transform: translateY(-1px);
+}
+
+.dd-btn-danger {
+    background-color: transparent;
+    color: var(--dd-error);
+    border-color: var(--dd-error);
+}
+
+.dd-btn-danger:hover {
+    background-color: var(--dd-error);
+    color: var(--dd-white);
+    transform: translateY(-1px);
+}
+
+.dd-btn-info {
+    background-color: transparent;
+    color: #5B8CDB;
+    border-color: #5B8CDB;
+}
+
+.dd-btn-info:hover {
+    background-color: #5B8CDB;
+    color: var(--dd-white);
+    transform: translateY(-1px);
+}
+
+.dd-btn-sm {
+    padding: 0.35rem 0.9rem;
+    font-size: 0.78rem;
+}
+
+.dd-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* ===== Badges ===== */
+.dd-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.65rem;
+    border-radius: 50px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.dd-badge-published {
+    background-color: rgba(76, 175, 80, 0.12);
+    color: var(--dd-success);
+}
+
+.dd-badge-draft {
+    background-color: rgba(96, 77, 83, 0.08);
+    color: var(--dd-text);
+}
+
+.dd-badge-count {
+    background-color: var(--dd-soft);
+    color: var(--dd-accent);
+}
+
+/* ===== Form Elements ===== */
+.dd-form-group {
+    margin-bottom: 1.25rem;
+}
+
+/* 가로 정렬 폼 행 (장르/레벨/가수, 연도/가수 등) */
+.dd-form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1rem;
+}
+.dd-form-row .dd-form-group {
+    flex: 1 1 160px;
+    min-width: 140px;
+}
+.dd-form-group .dd-help-text {
+    font-weight: 400;
+}
+
+.dd-form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    color: var(--dd-text);
+}
+
+.dd-form-group .dd-help-text {
+    font-size: 0.78rem;
+    color: var(--dd-text);
+    opacity: 0.6;
+    margin-top: 0.35rem;
+}
+
+.dd-input {
+    width: 100%;
+    padding: 0.65rem 1rem;
+    border: 1.5px solid var(--dd-border);
+    border-radius: var(--dd-radius-sm);
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: var(--dd-text);
+    background: var(--dd-white);
+    transition: var(--dd-transition);
+}
+
+.dd-input:focus {
+    outline: none;
+    border-color: var(--dd-accent);
+    box-shadow: 0 0 0 3px rgba(219, 127, 142, 0.12);
+}
+
+.dd-input::placeholder {
+    color: var(--dd-text);
+    opacity: 0.4;
+}
+
+.dd-textarea {
+    width: 100%;
+    padding: 0.65rem 1rem;
+    border: 1.5px solid var(--dd-border);
+    border-radius: var(--dd-radius-sm);
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: var(--dd-text);
+    background: var(--dd-white);
+    transition: var(--dd-transition);
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.6;
+}
+
+.dd-textarea:focus {
+    outline: none;
+    border-color: var(--dd-accent);
+    box-shadow: 0 0 0 3px rgba(219, 127, 142, 0.12);
+}
+
+/* ===== Tabs ===== */
+.dd-tabs {
+    border-bottom: 2px solid var(--dd-border);
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+}
+
+.dd-tab-btn {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--dd-text);
+    opacity: 0.6;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    transition: var(--dd-transition);
+}
+
+.dd-tab-btn:hover {
+    opacity: 1;
+    color: var(--dd-accent);
+}
+
+.dd-tab-btn.active {
+    opacity: 1;
+    color: var(--dd-accent);
+    border-bottom-color: var(--dd-accent);
+}
+
+.dd-tab-panel {
+    display: none;
+    animation: ddFadeIn 0.2s ease;
+}
+
+.dd-tab-panel.active {
+    display: block;
+}
+
+/* ===== Progress ===== */
+.dd-progress {
+    width: 100%;
+    margin: 1rem 0;
+}
+
+.dd-progress-bar {
+    height: 8px;
+    background: var(--dd-border);
+    border-radius: 50px;
+    overflow: hidden;
+    position: relative;
+}
+
+.dd-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: var(--dd-progress, 0%);
+    background: linear-gradient(90deg, var(--dd-accent), var(--dd-soft));
+    border-radius: 50px;
+    transition: width 0.4s ease;
+}
+
+.dd-progress-bar.animated::after {
+    animation: ddProgressPulse 1.5s ease-in-out infinite;
+}
+
+.dd-progress-text {
+    font-size: 0.82rem;
+    color: var(--dd-text);
+    margin-top: 0.5rem;
+    opacity: 0.8;
+}
+
+/* ===== Modal ===== */
+.dd-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100000;
+    align-items: center;
+    justify-content: center;
+}
+
+.dd-modal.active {
+    display: flex;
+}
+
+.dd-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(96, 77, 83, 0.5);
+    backdrop-filter: blur(2px);
+}
+
+.dd-modal-content {
+    position: relative;
+    background: var(--dd-white);
+    border-radius: var(--dd-radius);
+    padding: 2rem;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(96, 77, 83, 0.2);
+    animation: ddSlideUp 0.25s ease;
+}
+
+.dd-modal-content h2 {
+    font-size: 1.2rem;
+    margin: 0 0 1.25rem 0;
+    color: var(--dd-text);
+}
+
+.dd-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--dd-text);
+    opacity: 0.5;
+    transition: var(--dd-transition);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.dd-modal-close:hover {
+    opacity: 1;
+    background: var(--dd-soft);
+}
+
+.dd-modal-footer {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--dd-border);
+}
+
+/* ===== Empty State ===== */
+.dd-empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--dd-text);
+    opacity: 0.7;
+}
+
+.dd-empty-state .dd-empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.dd-empty-state .dd-empty-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.dd-empty-state .dd-empty-desc {
+    font-size: 0.9rem;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* ===== Lesson List ===== */
+.dd-lesson-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.dd-lesson-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--dd-border);
+    border-radius: var(--dd-radius-sm);
+    margin-bottom: 0.75rem;
+    background: var(--dd-white);
+    transition: var(--dd-transition);
+}
+
+.dd-lesson-item:hover {
+    border-color: var(--dd-accent);
+    box-shadow: 0 2px 8px rgba(219, 127, 142, 0.1);
+}
+
+.dd-lesson-item .dd-lesson-order {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--dd-soft);
+    color: var(--dd-accent);
+    font-weight: 700;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.dd-lesson-item .dd-lesson-title-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.dd-lesson-item .dd-lesson-title {
+    font-weight: 500;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.dd-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--dd-text);
+    opacity: 0.4;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: var(--dd-transition);
+    padding: 0;
+}
+
+.dd-btn-icon:hover {
+    opacity: 1;
+    background: var(--dd-soft);
+    color: var(--dd-accent);
+}
+
+.dd-inline-title-input {
+    padding: 0.3rem 0.6rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    border-radius: 6px !important;
+    max-width: 320px;
+}
+
+.dd-course-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.dd-course-title-wrap h1 {
+    margin: 0;
+}
+.dd-course-title-wrap .dd-btn-edit-course-title {
+    flex-shrink: 0;
+}
+.dd-course-title-wrap .dd-inline-title-input {
+    font-size: 1.4rem !important;
+    font-weight: 700 !important;
+    max-width: 500px;
+}
+
+.dd-lesson-item .dd-lesson-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ===== Toggle Switch ===== */
+.dd-toggle {
+    position: relative;
+    display: inline-block;
+    width: 42px;
+    height: 24px;
+}
+
+.dd-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.dd-toggle .dd-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--dd-border);
+    border-radius: 50px;
+    transition: var(--dd-transition);
+}
+
+.dd-toggle .dd-toggle-slider::before {
+    content: '';
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--dd-white);
+    border-radius: 50%;
+    transition: var(--dd-transition);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.dd-toggle input:checked + .dd-toggle-slider {
+    background-color: var(--dd-accent);
+}
+
+.dd-toggle input:checked + .dd-toggle-slider::before {
+    transform: translateX(18px);
+}
+
+.dd-toggle input:focus + .dd-toggle-slider {
+    box-shadow: 0 0 0 3px rgba(219, 127, 142, 0.2);
+}
+
+/* ===== Alert ===== */
+.dd-alert {
+    padding: 0.85rem 1.25rem;
+    border-radius: var(--dd-radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: ddFadeIn 0.3s ease;
+}
+
+.dd-alert-success {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: var(--dd-success);
+    border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.dd-alert-error {
+    background-color: rgba(229, 57, 53, 0.08);
+    color: var(--dd-error);
+    border: 1px solid rgba(229, 57, 53, 0.2);
+}
+
+.dd-alert-info {
+    background-color: rgba(33, 150, 243, 0.08);
+    color: var(--dd-info);
+    border: 1px solid rgba(33, 150, 243, 0.2);
+}
+
+.dd-alert-warning {
+    background-color: rgba(255, 152, 0, 0.08);
+    color: #E65100;
+    border: 1px solid rgba(255, 152, 0, 0.2);
+}
+
+/* ===== Loading Spinner ===== */
+.dd-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.dd-loading::after {
+    content: '';
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--dd-border);
+    border-top-color: var(--dd-accent);
+    border-radius: 50%;
+    animation: ddSpin 0.7s linear infinite;
+}
+
+.dd-loading-sm::after {
+    width: 18px;
+    height: 18px;
+    border-width: 2px;
+}
+
+.dd-loading-inline {
+    display: inline-flex;
+    padding: 0;
+    margin-left: 0.5rem;
+}
+
+/* ===== Animations ===== */
+@keyframes ddSpin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes ddFadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ddSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ddProgressPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* ===== Utility ===== */
+.dd-hidden {
+    display: none !important;
+}
+
+.dd-mt-1 { margin-top: 0.5rem; }
+.dd-mt-2 { margin-top: 1rem; }
+.dd-mt-3 { margin-top: 1.5rem; }
+.dd-mb-1 { margin-bottom: 0.5rem; }
+.dd-mb-2 { margin-bottom: 1rem; }
+.dd-mb-3 { margin-bottom: 1.5rem; }
+
+.dd-flex {
+    display: flex;
+    align-items: center;
+}
+
+.dd-flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dd-gap-1 { gap: 0.5rem; }
+.dd-gap-2 { gap: 1rem; }
+
+/* ===== QR Code Modal ===== */
+.dd-qr-container {
+    text-align: center;
+    padding: 1.5rem;
+}
+
+.dd-qr-container img {
+    max-width: 200px;
+    margin: 1rem auto;
+    display: block;
+}
+
+.dd-qr-container .dd-qr-url {
+    font-size: 0.8rem;
+    color: var(--dd-text);
+    opacity: 0.7;
+    word-break: break-all;
+    margin-top: 0.75rem;
+    padding: 0.5rem;
+    background: var(--dd-bg);
+    border-radius: var(--dd-radius-sm);
+}
+
+/* ===== Course Detail View ===== */
+.dd-course-detail-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.dd-course-detail-header h2 {
+    font-size: 1.3rem;
+    margin: 0 0 0.25rem 0;
+}
+
+.dd-course-detail-header p {
+    font-size: 0.9rem;
+    opacity: 0.7;
+    margin: 0;
+}
+
+.dd-back-btn {
+    background: none;
+    border: none;
+    color: var(--dd-accent);
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.4rem 0;
+    font-family: inherit;
+    transition: var(--dd-transition);
+}
+
+.dd-back-btn:hover {
+    opacity: 0.7;
+}
+
+/* ===== Generator Specific ===== */
+.dd-generated-lessons {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+}
+
+.dd-generated-lessons li {
+    padding: 0.6rem 1rem;
+    border-left: 3px solid var(--dd-accent);
+    margin-bottom: 0.5rem;
+    background: var(--dd-bg);
+    border-radius: 0 var(--dd-radius-sm) var(--dd-radius-sm) 0;
+    font-size: 0.85rem;
+    animation: ddFadeIn 0.3s ease;
+}
+
+/* ===== Settings Status ===== */
+.dd-status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.dd-status-indicator .dd-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.dd-status-indicator.dd-status-active .dd-status-dot {
+    background-color: var(--dd-success);
+}
+
+.dd-status-indicator.dd-status-inactive .dd-status-dot {
+    background-color: var(--dd-error);
+}
+
+.dd-status-indicator .dd-status-text {
+    font-size: 0.8rem;
+}
+
+/* ===== Info Box ===== */
+.dd-info-box {
+    background: var(--dd-bg);
+    border: 1px solid var(--dd-border);
+    border-left: 4px solid var(--dd-accent);
+    border-radius: var(--dd-radius-sm);
+    padding: 0.85rem 1.1rem;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--dd-text);
+}
+
+.dd-info-box strong {
+    color: var(--dd-accent);
+}
+
+/* ===== Outline Button ===== */
+.dd-btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1.5px solid var(--dd-accent);
+    background: transparent;
+    color: var(--dd-accent);
+    text-decoration: none;
+    transition: var(--dd-transition);
+}
+
+.dd-btn-outline:hover {
+    background: var(--dd-soft);
+    color: var(--dd-accent-hover);
+}
+
+/* ===== Course Thumbnail with Image ===== */
+.dd-course-thumb[style*="background-image"]::after {
+    display: none;
+}
+
+/* ===== Newsletter Admin ===== */
+.dd-gen-form {
+    margin-bottom: 2rem;
+}
+.dd-form-card {
+    background: var(--dd-white);
+    border: 1px solid var(--dd-border);
+    border-radius: var(--dd-radius);
+    padding: 1.5rem;
+    box-shadow: var(--dd-shadow);
+}
+.dd-form-card h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--dd-text);
+}
+.dd-form-desc {
+    font-size: 0.85rem;
+    color: #999;
+    margin-bottom: 1rem;
+}
+.dd-form-group {
+    margin-bottom: 1rem;
+}
+.dd-form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+    color: var(--dd-text);
+}
+.dd-form-group small {
+    display: block;
+    font-size: 0.78rem;
+    color: #999;
+    margin-top: 0.3rem;
+}
+.dd-input {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--dd-border);
+    border-radius: var(--dd-radius-sm);
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+}
+.dd-input:focus {
+    outline: none;
+    border-color: var(--dd-accent);
+}
+.dd-form-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+.dd-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--dd-border);
+    border-top-color: var(--dd-accent);
+    border-radius: 50%;
+    animation: dd-spin 0.8s linear infinite;
+    margin: 0 auto 0.5rem;
+}
+@keyframes dd-spin {
+    to { transform: rotate(360deg); }
+}
+.dd-nl-emoji {
+    font-size: 1.8rem;
+    line-height: 1;
+}
+.dd-nl-category {
+    display: inline-block;
+    background: var(--dd-soft);
+    color: var(--dd-accent);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+}
+.dd-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.dd-card-meta {
+    font-size: 0.78rem;
+    color: #999;
+    margin-bottom: 0.75rem;
+}
+.dd-btn-toggle.is-active {
+    background: var(--dd-soft);
+    color: var(--dd-accent);
+    border-color: var(--dd-accent);
+}
+/* ===== YouTube 트랙/자막 리스트 (중국어 노래 학습에서 사용) ===== */
+.dd-song-tracklist {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--dd-border);
+    border-radius: var(--dd-radius-sm);
+    padding: 0.5rem;
+}
+
+.dd-song-track-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--dd-radius-sm);
+    cursor: pointer;
+    transition: var(--dd-transition);
+    border: 1px solid transparent;
+    margin-bottom: 0.35rem;
+}
+
+.dd-song-track-row:hover {
+    background: var(--dd-bg);
+    border-color: var(--dd-border);
+}
+
+.dd-song-track-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--dd-accent);
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.dd-song-track-thumb {
+    width: 80px;
+    height: 45px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+    background: var(--dd-border);
+}
+
+.dd-song-track-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.dd-song-track-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--dd-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dd-song-track-status {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #999;
+}
+
+.dd-song-track-status.dd-sub-found {
+    color: var(--dd-success);
+}
+
+.dd-song-track-status.dd-sub-missing {
+    color: var(--dd-error);
+}
+
+.dd-song-track-status.dd-sub-blocked {
+    color: #b8860b;
+    font-weight: 600;
+    cursor: help;
+}
+
+.dd-song-sub-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--dd-border);
+    border-radius: var(--dd-radius-sm);
+    font-size: 0.85rem;
+    font-family: 'Pretendard', monospace;
+    color: var(--dd-text);
+    background: var(--dd-white);
+    resize: vertical;
+    transition: border-color 0.2s;
+}
+
+.dd-song-sub-textarea:focus {
+    outline: none;
+    border-color: var(--dd-accent);
+    box-shadow: 0 0 0 3px rgba(219, 127, 142, 0.12);
+}
+
+.dd-hidden { display: none !important; }
+
+/* ── Image Regeneration Grid ── */
+.dd-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+.dd-img-card {
+    background: var(--dd-bg);
+    border: 1px solid var(--dd-border);
+    border-radius: var(--dd-radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s;
+}
+.dd-img-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.dd-img-thumb {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    display: block;
+    background: #f0f0f0;
+}
+.dd-img-placeholder {
+    width: 100%;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f8f8;
+    color: #999;
+    font-size: 0.8rem;
+    border-bottom: 1px solid var(--dd-border);
+}
+.dd-img-info {
+    padding: 0.5rem 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+.dd-img-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--dd-text);
+}
+.dd-img-status {
+    font-size: 0.7rem;
+    color: #666;
+}
+.dd-img-status--loading {
+    color: var(--dd-accent);
+    animation: dd-spin-text 1.5s ease-in-out infinite;
+}
+.dd-img-status--success { color: #22c55e; }
+.dd-img-status--error { color: #ef4444; }
+@keyframes dd-spin-text {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+.dd-img-regen-btn {
+    margin: 0 0.5rem 0.5rem;
+    background: var(--dd-accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--dd-radius-sm);
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+}
+.dd-img-regen-btn:hover { opacity: 0.85; }
+.dd-img-regen-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+/* ============================================
+   이미지 생성 옵션 + 예상 비용
+   요금의 대부분이 이미지에서 발생하므로,
+   무엇을 만들지 생성 전에 명확히 보여 준다.
+   ============================================ */
+.dd-asset-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 0.5rem;
+}
+
+.dd-check {
+    display: flex !important;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0 !important;
+    padding: 0.6rem 0.75rem;
+    border: 1.5px solid var(--dd-border);
+    border-radius: var(--dd-radius-sm);
+    background: var(--dd-white);
+    cursor: pointer;
+    font-weight: 500 !important;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.dd-check:hover {
+    border-color: var(--dd-accent);
+    background: var(--dd-bg);
+}
+
+.dd-check input {
+    margin: 0;
+    flex: 0 0 auto;
+    accent-color: var(--dd-accent);
+}
+
+.dd-check span {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    font-size: 0.84rem;
+}
+
+.dd-check em {
+    font-style: normal;
+    font-size: 0.74rem;
+    color: var(--dd-text);
+    opacity: 0.55;
+}
+
+/* 체크된 항목만 요금이 발생하므로 시각적으로 구분 */
+.dd-check:has(input:checked) {
+    border-color: var(--dd-accent);
+    background: var(--dd-soft);
+}
+
+.dd-cost-estimate {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: var(--dd-radius-sm);
+    background: var(--dd-bg);
+    border: 1px dashed var(--dd-border);
+    font-size: 0.84rem;
+    color: var(--dd-text);
+}
+
+.dd-cost-estimate strong {
+    color: var(--dd-accent);
+    font-weight: 700;
+}
+
+.dd-cost-note {
+    font-size: 0.75rem;
+    opacity: 0.6;
+}

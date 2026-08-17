@@ -1,0 +1,416 @@
+/* ─── DD Stroke Practice & Idioms (한자 탭) ─── */
+
+/* ═══ Hanzi Tab Content ═══ */
+.dd-hz-section {
+    margin-bottom: 28px;
+}
+.dd-hz-title {
+    font-size: 17px;
+    color: #1a1a2e;
+    margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dd-hz-desc {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 16px;
+}
+.dd-hz-empty {
+    font-size: 13px;
+    color: #aaa;
+    text-align: center;
+    padding: 20px;
+}
+.dd-hz-loading {
+    text-align: center;
+    padding: 24px;
+    color: #888;
+    font-size: 14px;
+}
+
+/* Character grid */
+.dd-hz-char-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 8px;
+}
+.dd-hz-char-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    background: var(--dd-glass, rgba(255,255,255,0.55));
+    backdrop-filter: var(--dd-glass-blur);
+    border: 1px solid var(--dd-glass-border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s;
+}
+.dd-hz-char-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+.dd-hz-char {
+    font-size: 28px;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 500;
+    color: #1a1a2e;
+}
+.dd-hz-char-stars { font-size: 10px; margin-top: 4px; }
+.dd-hz-mini-star { color: #ddd; }
+.dd-hz-mini-star.is-on { color: #F9A825; }
+
+/* ═══ 강좌 단어 연습 (단어 단위 그룹) ═══ */
+.dd-hz-words {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+}
+.dd-hz-word-card {
+    background: var(--dd-glass, rgba(255,255,255,0.55));
+    backdrop-filter: var(--dd-glass-blur);
+    border: 1px solid var(--dd-glass-border);
+    border-radius: 14px;
+    padding: 12px 14px;
+}
+.dd-hz-word-head {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    margin-bottom: 10px;
+}
+.dd-hz-word-zh {
+    font-size: 20px;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 600;
+    color: #1a1a2e;
+}
+.dd-hz-word-pinyin { font-size: 12.5px; color: var(--dd-primary, #DB7F8E); }
+.dd-hz-word-ko { font-size: 12.5px; color: #6b6b80; }
+.dd-hz-word-tts {
+    margin-left: auto;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 8px;
+}
+.dd-hz-word-tts:hover { background: rgba(0,0,0,0.06); }
+.dd-hz-word-chars {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.dd-hz-word-char-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 7px 9px;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid var(--dd-glass-border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s;
+}
+.dd-hz-word-char-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+}
+.dd-hz-wc {
+    font-size: 22px;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 500;
+    color: #1a1a2e;
+}
+.dd-hz-wc-stars { font-size: 9px; margin-top: 3px; }
+
+/* ═══ Stroke Practice Modal ═══ */
+.dd-sp-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: ddSpFadeIn 0.25s;
+}
+@keyframes ddSpFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.dd-sp-modal {
+    width: 92%;
+    max-width: 380px;
+    background: var(--dd-glass-strong, rgba(255,255,255,0.88));
+    backdrop-filter: var(--dd-glass-blur);
+    border: 1px solid var(--dd-glass-border);
+    border-radius: var(--dd-radius, 16px);
+    box-shadow: var(--dd-glass-shadow);
+    padding: 20px;
+    animation: ddSpSlide 0.3s ease;
+}
+@keyframes ddSpSlide {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.dd-sp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+.dd-sp-char-info { display: flex; align-items: baseline; gap: 8px; }
+.dd-sp-target-char {
+    font-size: 32px;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+.dd-sp-target-pinyin { font-size: 14px; color: #888; }
+.dd-sp-target-ko { font-size: 13px; color: #666; }
+.dd-sp-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(0,0,0,0.06);
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Canvas */
+.dd-sp-canvas-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    max-width: 300px;
+    margin: 0 auto 16px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    border: 2px solid rgba(0,0,0,0.08);
+}
+.dd-sp-guide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 220px;
+    font-family: 'Noto Sans SC', sans-serif;
+    color: rgba(0,0,0,0.06);
+    pointer-events: none;
+    transition: color 0.3s;
+    line-height: 1;
+}
+.dd-sp-guide-flash {
+    color: rgba(219,127,142,0.25);
+}
+.dd-sp-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    touch-action: none;
+}
+
+/* Cross guide lines */
+.dd-sp-canvas-wrap::before,
+.dd-sp-canvas-wrap::after {
+    content: '';
+    position: absolute;
+    background: rgba(0,0,0,0.04);
+    z-index: 0;
+}
+.dd-sp-canvas-wrap::before {
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+}
+.dd-sp-canvas-wrap::after {
+    left: 50%;
+    top: 10%;
+    bottom: 10%;
+    width: 1px;
+}
+
+/* Controls */
+.dd-sp-controls {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+.dd-sp-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.dd-sp-clear { background: rgba(0,0,0,0.06); color: #555; }
+.dd-sp-hint { background: #FFF3E0; color: #E65100; }
+.dd-sp-submit { background: var(--dd-primary, #DB7F8E); color: #fff; }
+.dd-sp-submit:hover { background: var(--dd-primary-hover); }
+
+/* Progress */
+.dd-sp-progress {
+    text-align: center;
+    font-size: 13px;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.dd-sp-stars { font-size: 20px; }
+.dd-sp-star { color: #ddd; transition: color 0.3s; }
+.dd-sp-star.is-filled { color: #F9A825; }
+.dd-sp-score-msg { font-weight: 600; color: var(--dd-primary); }
+
+/* ═══ Idiom Cards ═══ */
+.dd-hz-idiom-card {
+    background: var(--dd-glass, rgba(255,255,255,0.55));
+    backdrop-filter: var(--dd-glass-blur);
+    border: 1px solid var(--dd-glass-border);
+    border-radius: var(--dd-radius, 16px);
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    transition: transform 0.15s;
+}
+.dd-hz-idiom-card:hover { transform: translateY(-1px); }
+
+.dd-hz-idiom-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.dd-hz-idiom-text {
+    font-size: 24px;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 700;
+    color: #1a1a2e;
+    letter-spacing: 2px;
+}
+.dd-hz-idiom-diff {
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.dd-hz-idiom-pinyin {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 6px;
+}
+.dd-hz-idiom-meaning {
+    font-size: 15px;
+    color: #333;
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+.dd-hz-idiom-story {
+    background: rgba(0,0,0,0.02);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+}
+.dd-hz-idiom-story-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+    display: block;
+    margin-bottom: 4px;
+}
+.dd-hz-idiom-story p {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.6;
+    margin: 0;
+}
+.dd-hz-idiom-example {
+    background: rgba(219,127,142,0.05);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+}
+.dd-hz-idiom-ex-zh {
+    display: block;
+    font-size: 15px;
+    font-family: 'Noto Sans SC', sans-serif;
+    color: #1a1a2e;
+    margin-bottom: 2px;
+}
+.dd-hz-idiom-ex-ko {
+    display: block;
+    font-size: 13px;
+    color: #888;
+}
+
+/* Idiom character practice buttons */
+.dd-hz-idiom-chars {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+.dd-hz-idiom-char-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    background: #fff;
+    font-size: 20px;
+    font-family: 'Noto Sans SC', sans-serif;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+}
+.dd-hz-idiom-char-btn:hover {
+    background: rgba(219,127,142,0.08);
+    transform: scale(1.1);
+}
+.dd-hz-idiom-write-hint {
+    font-size: 11px;
+    color: #bbb;
+    margin-left: 4px;
+}
+
+/* TTS & Save buttons */
+.dd-hz-idiom-tts, .dd-hz-idiom-save {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-right: 6px;
+    transition: background 0.2s;
+}
+.dd-hz-idiom-tts { background: rgba(0,0,0,0.05); color: #555; }
+.dd-hz-idiom-tts:hover { background: rgba(0,0,0,0.08); }
+.dd-hz-idiom-save { background: rgba(219,127,142,0.1); color: var(--dd-primary); }
+.dd-hz-idiom-save:hover { background: rgba(219,127,142,0.2); }
+.dd-hz-idiom-save:disabled { opacity: 0.5; cursor: default; }
+
+/* ═══ Responsive ═══ */
+@media (max-width: 480px) {
+    .dd-sp-modal { width: 96%; padding: 14px; }
+    .dd-sp-target-char { font-size: 26px; }
+    .dd-sp-guide { font-size: 160px; }
+    .dd-hz-char-grid { grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); }
+    .dd-hz-idiom-text { font-size: 20px; }
+}

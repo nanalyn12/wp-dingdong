@@ -1,0 +1,164 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 3,
+  "settings": {
+    "appearanceTools": true,
+    "layout": {
+      "contentSize": "800px",
+      "wideSize": "1280px"
+    },
+    "color": {
+      "palette": [
+        {
+          "slug": "soft-blush",
+          "color": "#FFDBDA",
+          "name": "Soft Blush"
+        },
+        {
+          "slug": "old-rose",
+          "color": "#DB7F8E",
+          "name": "Old Rose"
+        },
+        {
+          "slug": "fairy-floss",
+          "color": "#EBCCC5",
+          "name": "Fairy Floss"
+        },
+        {
+          "slug": "pale-slate",
+          "color": "#D5C5C8",
+          "name": "Pale Slate"
+        },
+        {
+          "slug": "taupe-grey",
+          "color": "#604D53",
+          "name": "Taupe Grey"
+        },
+        {
+          "slug": "white",
+          "color": "#FFFFFF",
+          "name": "White"
+        }
+      ],
+      "defaultPalette": false,
+      "defaultGradients": false
+    },
+    "typography": {
+      "fontFamilies": [
+        {
+          "fontFamily": "'Plus Jakarta Sans', sans-serif",
+          "slug": "heading",
+          "name": "Plus Jakarta Sans"
+        },
+        {
+          "fontFamily": "'Noto Sans KR', sans-serif",
+          "slug": "body",
+          "name": "Noto Sans KR"
+        },
+        {
+          "fontFamily": "'Noto Sans TC', sans-serif",
+          "slug": "chinese",
+          "name": "Noto Sans TC"
+        }
+      ],
+      "fontSizes": [
+        {
+          "slug": "small",
+          "size": "0.875rem",
+          "name": "Small"
+        },
+        {
+          "slug": "medium",
+          "size": "1rem",
+          "name": "Medium"
+        },
+        {
+          "slug": "large",
+          "size": "1.25rem",
+          "name": "Large"
+        },
+        {
+          "slug": "x-large",
+          "size": "1.75rem",
+          "name": "X-Large"
+        },
+        {
+          "slug": "xx-large",
+          "size": "2.25rem",
+          "name": "XX-Large"
+        },
+        {
+          "slug": "huge",
+          "size": "clamp(2.5rem, 5vw, 3.5rem)",
+          "name": "Huge"
+        }
+      ]
+    },
+    "spacing": {
+      "units": ["px", "em", "rem", "%", "vw", "vh"],
+      "spacingSizes": [
+        { "slug": "10", "size": "0.5rem", "name": "Compact" },
+        { "slug": "20", "size": "1rem", "name": "Small" },
+        { "slug": "30", "size": "1.5rem", "name": "Regular" },
+        { "slug": "40", "size": "2rem", "name": "Medium" },
+        { "slug": "50", "size": "3rem", "name": "Large" },
+        { "slug": "60", "size": "5rem", "name": "Spacious" }
+      ]
+    }
+  },
+  "styles": {
+    "color": {
+      "background": "#FFFFFF",
+      "text": "#604D53"
+    },
+    "typography": {
+      "fontFamily": "'Noto Sans KR', sans-serif",
+      "fontSize": "1rem",
+      "lineHeight": "1.65"
+    },
+    "elements": {
+      "heading": {
+        "typography": {
+          "fontFamily": "'Plus Jakarta Sans', 'Noto Sans KR', sans-serif",
+          "fontWeight": "700",
+          "lineHeight": "1.2"
+        },
+        "color": {
+          "text": "#604D53"
+        }
+      },
+      "link": {
+        "color": {
+          "text": "#DB7F8E"
+        }
+      },
+      "button": {
+        "color": {
+          "background": "#DB7F8E",
+          "text": "#FFFFFF"
+        },
+        "border": {
+          "radius": "50px"
+        },
+        "typography": {
+          "fontWeight": "600"
+        }
+      }
+    },
+    "spacing": {
+      "blockGap": "0"
+    }
+  },
+  "templateParts": [
+    {
+      "name": "header",
+      "title": "Header",
+      "area": "header"
+    },
+    {
+      "name": "footer",
+      "title": "Footer",
+      "area": "footer"
+    }
+  ]
+}

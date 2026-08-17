@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dingdong 자막 긁기 — 북마클릿 v2</title>
+<style>
+  body{font:16px/1.7 -apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#2d2d2d;background:#fffafb}
+  h1{font-size:1.5rem;color:#DB7F8E}
+  h2{font-size:1.1rem;margin-top:2rem}
+  .btn{display:inline-block;background:#DB7F8E;color:#fff;padding:12px 22px;border-radius:10px;font-weight:700;text-decoration:none;font-size:1.05rem;box-shadow:0 4px 14px rgba(219,127,142,.35);cursor:grab}
+  .drag-zone{background:#fff;border:2px dashed #f0c4d2;border-radius:14px;padding:24px;text-align:center;margin:1rem 0}
+  ol{padding-left:1.2rem}ol li{margin-bottom:.5rem}
+  code{background:#f4eef0;padding:2px 6px;border-radius:5px;font-size:.9em}
+  textarea{width:100%;height:130px;font:12px/1.4 monospace;border:1px solid #e0cdd4;border-radius:8px;padding:10px;margin-top:8px;box-sizing:border-box}
+  .tip{background:#f0f7ff;border:1px solid #c8dff5;border-radius:8px;padding:12px 16px;color:#1565C0;font-size:.92rem}
+  .warn{background:#fff4e5;border:1px solid #ffd599;border-radius:8px;padding:12px 16px;color:#8a5300;font-size:.92rem}
+</style>
+</head>
+<body>
+<h1>🐼 dingdong 자막 긁기 v2 (신형 UI 대응)</h1>
+<p>유튜브 <b>[스크립트 표시]</b> 패널의 자막을 긁어 <b>클립보드 복사</b>합니다. 클래스 이름이 아니라
+<b>타임스탬프 패턴</b>으로 찾아 신·구 UI 모두 대응하고, 못 찾으면 <b>진단정보를 자동 복사</b>합니다.</p>
+
+<h2>① 설치 — 버튼을 북마크바로 드래그</h2>
+<div class="drag-zone">
+  <a class="btn" href="javascript:(function(){function pad(n){return (n<10?'0':'')+n;}function fmtTs(h,m,s){return (h>0?h+':':'')+pad(m)+':'+pad(s);}function tsOf(full){var m=full.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);if(m){return m[3]!==undefined?fmtTs(+m[1],+m[2],+m[3]):fmtTs(0,+m[1],+m[2]);}var hh=(full.match(/(\d+)\s*시간/)||[])[1],mm=(full.match(/(\d+)\s*분/)||[])[1],ss=(full.match(/(\d+)\s*초/)||[])[1];if(hh||mm||ss)return fmtTs(+(hh||0),+(mm||0),+(ss||0));return '';}function clean(full){full=(full||'').replace(/\s+/g,' ').trim();var ts=tsOf(full);var lyric=full.replace(/\d{1,2}:\d{2}(?::\d{2})?/g,'').replace(/\d+\s*시간/g,'').replace(/\d+\s*분/g,'').replace(/\d+\s*초/g,'').replace(/\s+/g,' ').trim();if(!lyric)return '';return ts?('['+ts+'] '+lyric):lyric;}function deepAll(root,out){out=out||[];var w=root.querySelectorAll('*');for(var i=0;i<w.length;i++){var el=w[i];out.push(el);if(el.shadowRoot)deepAll(el.shadowRoot,out);}return out;}var all=deepAll(document);var lines=[];var segs=all.filter(function(e){var tn=e.tagName?e.tagName.toLowerCase():'';var cn=(typeof e.className==='string')?e.className:'';return tn==='ytd-transcript-segment-renderer'||tn==='yt-transcript-segment-renderer'||tn==='timeline-item-view-model'||/transcript-segment/.test(cn)||/timeline-item/.test(cn);});if(segs.length){segs.forEach(function(n){var t=clean(n.textContent);if(t)lines.push(t);});}if(!lines.length){var seen=[];all.forEach(function(e){if(e.children&&e.children.length===0&&/^\d{1,2}:\d{2}(:\d{2})?$/.test((e.textContent||'').trim())){var row=e;for(var k=0;k<4;k++){if(!row.parentElement)break;row=row.parentElement;var full=(row.textContent||'').replace(/\s+/g,' ').trim();var st=full.replace(/^\d{1,2}:\d{2}(:\d{2})?\s*/,'').trim();if(st&&st!==full)break;}if(seen.indexOf(row)<0){seen.push(row);var t=clean(row.textContent);if(t)lines.push(t);}}});}function toast(m,c){var d=document.createElement('div');d.textContent=m;d.style.cssText='position:fixed;z-index:9999999;left:50%;top:20px;transform:translateX(-50%);background:'+(c||'#DB7F8E')+';color:#fff;padding:12px 18px;border-radius:10px;font:14px sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.3)';document.body.appendChild(d);setTimeout(function(){d.remove();},4000);}function fb(o,cb){var a=document.createElement('textarea');a.value=o;document.body.appendChild(a);a.select();try{document.execCommand('copy');}catch(_){}a.remove();cb();}function copy(o,cb){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(o).then(cb,function(){fb(o,cb);});}else{fb(o,cb);}}if(lines.length){copy(lines.join(String.fromCharCode(10)),function(){toast('OK 자막 '+lines.length+'줄 복사됨');});}else{var sr=0;all.forEach(function(e){if(e.shadowRoot)sr++;});var p=document.querySelector('ytd-transcript-segment-list-renderer,[target-id*=transcript],ytd-engagement-panel-section-list-renderer')||document.body;var diag='[DINGDONG DIAG] '+location.href+' | els='+all.length+' shadowRoots='+sr+String.fromCharCode(10)+(p.outerHTML||'').slice(0,3500);copy(diag,function(){toast('X 못 찾음 - 진단정보 복사됨. 채팅에 붙여넣으세요','#b3261e');});}})();">📋 dingdong 자막 긁기 v2</a>
+  <p style="margin:.8rem 0 0;color:#888;font-size:.88rem">← 이 버튼을 브라우저 <b>북마크바</b>로 끌어다 놓으세요 (기존 v1 북마크는 삭제)</p>
+</div>
+<p class="tip">💡 북마크바가 없으면 <code>Ctrl+Shift+B</code>. 드래그가 안 되면 새 북마크를 만들고 아래 코드를 <b>URL</b>칸에 붙여넣으세요.</p>
+<textarea readonly onclick="this.select()">javascript:(function(){function pad(n){return (n<10?'0':'')+n;}function fmtTs(h,m,s){return (h>0?h+':':'')+pad(m)+':'+pad(s);}function tsOf(full){var m=full.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);if(m){return m[3]!==undefined?fmtTs(+m[1],+m[2],+m[3]):fmtTs(0,+m[1],+m[2]);}var hh=(full.match(/(\d+)\s*시간/)||[])[1],mm=(full.match(/(\d+)\s*분/)||[])[1],ss=(full.match(/(\d+)\s*초/)||[])[1];if(hh||mm||ss)return fmtTs(+(hh||0),+(mm||0),+(ss||0));return '';}function clean(full){full=(full||'').replace(/\s+/g,' ').trim();var ts=tsOf(full);var lyric=full.replace(/\d{1,2}:\d{2}(?::\d{2})?/g,'').replace(/\d+\s*시간/g,'').replace(/\d+\s*분/g,'').replace(/\d+\s*초/g,'').replace(/\s+/g,' ').trim();if(!lyric)return '';return ts?('['+ts+'] '+lyric):lyric;}function deepAll(root,out){out=out||[];var w=root.querySelectorAll('*');for(var i=0;i<w.length;i++){var el=w[i];out.push(el);if(el.shadowRoot)deepAll(el.shadowRoot,out);}return out;}var all=deepAll(document);var lines=[];var segs=all.filter(function(e){var tn=e.tagName?e.tagName.toLowerCase():'';var cn=(typeof e.className==='string')?e.className:'';return tn==='ytd-transcript-segment-renderer'||tn==='yt-transcript-segment-renderer'||tn==='timeline-item-view-model'||/transcript-segment/.test(cn)||/timeline-item/.test(cn);});if(segs.length){segs.forEach(function(n){var t=clean(n.textContent);if(t)lines.push(t);});}if(!lines.length){var seen=[];all.forEach(function(e){if(e.children&&e.children.length===0&&/^\d{1,2}:\d{2}(:\d{2})?$/.test((e.textContent||'').trim())){var row=e;for(var k=0;k<4;k++){if(!row.parentElement)break;row=row.parentElement;var full=(row.textContent||'').replace(/\s+/g,' ').trim();var st=full.replace(/^\d{1,2}:\d{2}(:\d{2})?\s*/,'').trim();if(st&&st!==full)break;}if(seen.indexOf(row)<0){seen.push(row);var t=clean(row.textContent);if(t)lines.push(t);}}});}function toast(m,c){var d=document.createElement('div');d.textContent=m;d.style.cssText='position:fixed;z-index:9999999;left:50%;top:20px;transform:translateX(-50%);background:'+(c||'#DB7F8E')+';color:#fff;padding:12px 18px;border-radius:10px;font:14px sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.3)';document.body.appendChild(d);setTimeout(function(){d.remove();},4000);}function fb(o,cb){var a=document.createElement('textarea');a.value=o;document.body.appendChild(a);a.select();try{document.execCommand('copy');}catch(_){}a.remove();cb();}function copy(o,cb){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(o).then(cb,function(){fb(o,cb);});}else{fb(o,cb);}}if(lines.length){copy(lines.join(String.fromCharCode(10)),function(){toast('OK 자막 '+lines.length+'줄 복사됨');});}else{var sr=0;all.forEach(function(e){if(e.shadowRoot)sr++;});var p=document.querySelector('ytd-transcript-segment-list-renderer,[target-id*=transcript],ytd-engagement-panel-section-list-renderer')||document.body;var diag='[DINGDONG DIAG] '+location.href+' | els='+all.length+' shadowRoots='+sr+String.fromCharCode(10)+(p.outerHTML||'').slice(0,3500);copy(diag,function(){toast('X 못 찾음 - 진단정보 복사됨. 채팅에 붙여넣으세요','#b3261e');});}})();</textarea>
+
+<h2>② 사용법</h2>
+<ol>
+  <li>유튜브 영상 열기 → <b>[…더보기]</b> 또는 설명란에서 <b>[스크립트 표시]</b> 클릭 (자막 패널 뜸)</li>
+  <li>북마크 <b>“📋 dingdong 자막 긁기 v2”</b> 클릭</li>
+  <li><b>“OK 자막 N줄 복사됨”</b> 토스트 → dingdong “가사 직접 입력”에 <code>Ctrl+V</code></li>
+</ol>
+
+<div class="warn">
+  <b>혹시 “X 못 찾음 — 진단정보 복사됨”</b> 이 뜨면, 그 상태로 <b>채팅에 <code>Ctrl+V</code></b> 해서 붙여넣어 주세요.
+  유튜브 패널의 실제 구조(HTML 일부)가 복사돼 있어서, 그걸 보면 셀렉터를 정확히 맞출 수 있습니다.
+</div>
+
+<p style="margin-top:1.5rem;color:#888;font-size:.85rem">참고: 콘솔의 <code>403 / doubleclick CORS / RotateCookies 429</code> 같은 빨간 에러는 <b>유튜브 자체 광고·쿠키 요청</b>이라 북마클릿과 무관합니다. 신경 쓰지 마세요.</p>
+</body>
+</html>

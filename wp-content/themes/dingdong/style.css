@@ -1,0 +1,1429 @@
+/*
+Theme Name: Dingdong
+Theme URI: https://example.com
+Author: Dingdong
+Author URI: https://example.com
+Description: Chinese language and culture education platform for Korean learners
+Version: 1.0.0
+Requires at least: 6.0
+Tested up to: 6.7
+Requires PHP: 7.4
+License: GNU General Public License v2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: dingdong
+*/
+
+/* === CSS Custom Properties (Theme Color Switcher) === */
+:root {
+    --dd-accent: #DB7F8E;
+    --dd-accent-hover: #c96e7d;
+    --dd-soft: #FFDBDA;
+    --dd-mid: #EBCCC5;
+    --dd-accent-shadow: rgba(219, 127, 142, 0.3);
+    --dd-accent-shadow-hover: rgba(219, 127, 142, 0.4);
+}
+
+/* === Footer Margin Reset === */
+.wp-site-blocks > footer {
+    margin-block-start: 0;
+}
+
+/* === Header === */
+.dingdong-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9990;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid #D5C5C8;
+    padding: 0 2rem;
+}
+
+body.admin-bar .dingdong-header {
+    top: 32px;
+}
+
+.dingdong-header > .wp-block-group {
+    max-width: 1280px;
+    margin: 0 auto;
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dingdong-header .wp-block-group {
+    min-height: auto;
+}
+
+.dingdong-logo-text {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: #604D53;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+}
+
+.dingdong-logo-accent {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--dd-accent);
+    background: var(--dd-soft);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 4px;
+}
+
+.dingdong-nav .wp-block-navigation-item a {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #604D53;
+    text-decoration: none;
+    position: relative;
+    transition: color 0.3s ease;
+}
+
+.dingdong-nav .wp-block-navigation-item a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--dd-accent);
+    border-radius: 1px;
+    transition: width 0.3s ease;
+}
+
+.dingdong-nav .wp-block-navigation-item a:hover {
+    color: var(--dd-accent);
+}
+
+.dingdong-nav .wp-block-navigation-item a:hover::after {
+    width: 100%;
+}
+
+/* === Hero Section === */
+.dingdong-hero {
+    min-height: 100vh;
+    padding-top: 72px;
+    display: grid;
+    grid-template-columns: 55% 45%;
+    align-items: center;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Hero background decorative blobs */
+.dingdong-hero::before {
+    content: '';
+    position: absolute;
+    top: -120px;
+    left: -80px;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--dd-soft) 0%, transparent 70%);
+    opacity: 0.6;
+    z-index: 0;
+    animation: ddBlobPulse 8s ease-in-out infinite;
+}
+
+.dingdong-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px;
+    left: 30%;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--dd-mid) 0%, transparent 70%);
+    opacity: 0.4;
+    z-index: 0;
+    animation: ddBlobPulse 10s ease-in-out 2s infinite;
+}
+
+@keyframes ddBlobPulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.15); opacity: 0.7; }
+}
+
+.dingdong-hero-text {
+    padding-right: 3rem;
+    position: relative;
+    z-index: 1;
+}
+
+/* Override blockGap:0 — force spacing between hero children */
+.dingdong-hero-text .dingdong-hero-subtext {
+    margin-bottom: 2.5rem !important;
+}
+
+.dingdong-hero-text .dingdong-hero-chips {
+    margin-bottom: 2.5rem !important;
+}
+
+.dingdong-hero-text .dingdong-hero-cta-group {
+    margin-top: 0;
+}
+
+/* Large watermark Chinese character behind hero text */
+.dingdong-hero-text::before {
+    content: '\5B66';  /* 学 */
+    position: absolute;
+    top: -40px;
+    left: -30px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 14rem;
+    font-weight: 900;
+    color: var(--dd-soft);
+    opacity: 0.35;
+    z-index: -1;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+}
+
+.dingdong-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--dd-soft);
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #604D53;
+    margin-bottom: 1.5rem;
+}
+
+.dingdong-hero-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--dd-accent);
+    animation: ddDotPulse 2s ease-in-out infinite;
+}
+
+@keyframes ddDotPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.6); opacity: 0.6; }
+}
+
+.dingdong-hero-headline {
+    font-family: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+    font-size: clamp(2.5rem, 5vw, 3.8rem);
+    font-weight: 800;
+    color: #604D53;
+    line-height: 1.8;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.25rem;
+}
+
+/* Accent underline on headline keyword */
+.dingdong-hero-headline-accent {
+    position: relative;
+    display: inline;
+    color: var(--dd-accent);
+}
+
+.dingdong-hero-headline-accent::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    width: 100%;
+    height: 8px;
+    background: var(--dd-soft);
+    border-radius: 4px;
+    z-index: -1;
+}
+
+.dingdong-hero-subtext {
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: #604D53;
+    opacity: 0.8;
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+    max-width: 440px;
+}
+
+/* Hero feature chips */
+.dingdong-hero-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.dingdong-hero-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #FFFFFF;
+    border: 1.5px solid var(--dd-border, #D5C5C8);
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #604D53;
+    transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+.dingdong-hero-chip:hover {
+    border-color: var(--dd-accent);
+    background: var(--dd-soft);
+}
+
+.dingdong-hero-chip::before {
+    content: attr(data-icon);
+    font-size: 0.9rem;
+}
+
+/* CTA group: button + secondary link */
+.dingdong-hero-cta-group {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.dingdong-hero-cta .wp-block-button__link {
+    background: var(--dd-accent) !important;
+    color: #FFFFFF !important;
+    padding: 1rem 2.25rem;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 4px 16px var(--dd-accent-shadow);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.dingdong-hero-cta .wp-block-button__link::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+}
+
+.dingdong-hero-cta .wp-block-button__link:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.dingdong-hero-cta .wp-block-button__link:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 8px 24px var(--dd-accent-shadow-hover);
+    background: var(--dd-accent-hover) !important;
+}
+
+.dingdong-hero-secondary a,
+.dingdong-hero-secondary {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #604D53;
+    opacity: 0.7;
+    text-decoration: none;
+    transition: color 0.3s ease, opacity 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.dingdong-hero-secondary a:hover,
+.dingdong-hero-secondary:hover {
+    opacity: 1;
+    color: var(--dd-accent);
+}
+
+.dingdong-hero-secondary a::after,
+.dingdong-hero-secondary::after {
+    content: '\2192';
+    transition: transform 0.3s ease;
+}
+
+.dingdong-hero-secondary a:hover::after,
+.dingdong-hero-secondary:hover::after {
+    transform: translateX(3px);
+}
+
+.dingdong-hero-stats {
+    display: flex;
+    gap: 2.5rem;
+    margin-top: 2.5rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid #D5C5C8;
+}
+
+.dingdong-stat-number {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--dd-accent);
+}
+
+.dingdong-stat-label {
+    font-size: 0.8rem;
+    color: #604D53;
+    opacity: 0.65;
+    margin-top: 0.2rem;
+}
+
+/* Hero Visual - Floating Cards */
+.dingdong-hero-visual {
+    position: relative;
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+.dingdong-floating-card {
+    position: absolute;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 8px 32px rgba(96, 77, 83, 0.08), 0 2px 8px rgba(96, 77, 83, 0.04);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dingdong-floating-card:hover {
+    box-shadow: 0 12px 40px rgba(96, 77, 83, 0.12), 0 4px 12px rgba(96, 77, 83, 0.06);
+}
+
+.dingdong-card-1 {
+    background: var(--dd-soft);
+    top: 12%;
+    right: 10%;
+    transform: rotate(-4deg);
+    animation: ddFloat1 6s ease-in-out infinite;
+}
+
+.dingdong-card-1 .dd-card-main {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #604D53;
+}
+
+.dingdong-card-1 .dd-card-sub {
+    font-size: 0.75rem;
+    color: #604D53;
+    opacity: 0.7;
+    margin-top: 0.25rem;
+}
+
+.dingdong-card-2 {
+    background: #FFFFFF;
+    border: 1.5px solid #D5C5C8;
+    top: 30%;
+    left: 5%;
+    transform: rotate(3deg);
+    animation: ddFloat2 7s ease-in-out infinite;
+}
+
+.dingdong-card-2 .dd-card-main {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--dd-accent);
+}
+
+.dingdong-card-2 .dd-card-sub {
+    font-size: 0.7rem;
+    color: #604D53;
+    opacity: 0.6;
+    margin-top: 0.2rem;
+}
+
+.dingdong-card-5 {
+    background: var(--dd-accent);
+    top: 55%;
+    left: 30%;
+    transform: rotate(-2deg);
+    animation: ddFloat5 7.5s ease-in-out infinite;
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+}
+
+.dingdong-card-5 .dd-card-main {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #FFFFFF;
+    letter-spacing: 0.05em;
+}
+
+/* === Phone Mockup in Hero Visual === */
+.dingdong-hero-phone {
+    width: 260px;
+    height: 440px;
+    background: #FFFFFF;
+    border-radius: 32px;
+    box-shadow:
+        0 24px 80px rgba(96, 77, 83, 0.18),
+        0 4px 16px rgba(96, 77, 83, 0.08),
+        inset 0 0 0 3px #E8DDE0;
+    overflow: hidden;
+    position: relative;
+    z-index: 2;
+    animation: ddPhoneFloat 7s ease-in-out infinite;
+}
+
+@keyframes ddPhoneFloat {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-14px) rotate(-2deg); }
+}
+
+.dingdong-phone-screen {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0;
+    background: linear-gradient(180deg, #FAFAFA 0%, #FFFFFF 40%);
+}
+
+.dingdong-phone-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.25rem 0.75rem;
+    border-bottom: 1px solid #F0E8EA;
+}
+
+.dingdong-phone-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #604D53;
+    letter-spacing: -0.01em;
+}
+
+.dingdong-phone-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--dd-accent);
+    animation: ddDotPulse 2s ease-in-out infinite;
+}
+
+.dingdong-phone-card {
+    margin: 1.5rem 1.25rem;
+    padding: 1.5rem;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--dd-soft) 0%, #FFFFFF 100%);
+    border: 1.5px solid var(--dd-mid);
+    text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.dingdong-phone-hanzi {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #604D53;
+    letter-spacing: 0.08em;
+    display: block;
+}
+
+.dingdong-phone-pinyin {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--dd-accent);
+    display: block;
+    margin-top: 0.25rem;
+}
+
+.dingdong-phone-ko {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: #604D53;
+    opacity: 0.6;
+    display: block;
+    margin-top: 0.35rem;
+}
+
+.dingdong-phone-progress {
+    margin: 0 1.25rem 1rem;
+    height: 6px;
+    border-radius: 3px;
+    background: #F0E8EA;
+    overflow: hidden;
+}
+
+.dingdong-phone-progress-fill {
+    width: 65%;
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--dd-accent), var(--dd-soft));
+    animation: ddProgressShimmer 3s ease-in-out infinite;
+}
+
+@keyframes ddProgressShimmer {
+    0% { opacity: 0.8; }
+    50% { opacity: 1; }
+    100% { opacity: 0.8; }
+}
+
+.dingdong-phone-tabs {
+    display: flex;
+    border-top: 1px solid #F0E8EA;
+    padding: 0.6rem 0.5rem;
+    gap: 0;
+}
+
+.dingdong-phone-tab {
+    flex: 1;
+    text-align: center;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #604D53;
+    opacity: 0.45;
+    padding: 0.35rem 0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.dingdong-phone-tab.active {
+    opacity: 1;
+    color: var(--dd-accent);
+    background: var(--dd-soft);
+    font-weight: 600;
+}
+
+/* Decorative Elements */
+.dingdong-deco-dot {
+    position: absolute;
+    border-radius: 50%;
+}
+
+.dingdong-deco-1 {
+    width: 12px;
+    height: 12px;
+    top: 8%;
+    left: 20%;
+    background: var(--dd-soft);
+    animation: ddFloat2 4s ease-in-out infinite;
+}
+
+.dingdong-deco-2 {
+    width: 8px;
+    height: 8px;
+    bottom: 35%;
+    right: 30%;
+    background: var(--dd-accent);
+    opacity: 0.5;
+    animation: ddFloat1 5s ease-in-out infinite;
+}
+
+.dingdong-deco-3 {
+    width: 16px;
+    height: 16px;
+    top: 45%;
+    right: 35%;
+    background: var(--dd-mid);
+    animation: ddFloat3 6s ease-in-out infinite;
+}
+
+/* === Float Animations === */
+@keyframes ddFloat1 {
+    0%, 100% { transform: rotate(-4deg) translateY(0); }
+    50% { transform: rotate(-4deg) translateY(-12px); }
+}
+
+@keyframes ddFloat2 {
+    0%, 100% { transform: rotate(3deg) translateY(0); }
+    50% { transform: rotate(3deg) translateY(-10px); }
+}
+
+@keyframes ddFloat3 {
+    0%, 100% { transform: rotate(5deg) translateY(0); }
+    50% { transform: rotate(5deg) translateY(-14px); }
+}
+
+@keyframes ddFloat5 {
+    0%, 100% { transform: rotate(-2deg) translateY(0); }
+    50% { transform: rotate(-2deg) translateY(-11px); }
+}
+
+/* === Entrance Animations === */
+@keyframes ddSlideInLeft {
+    from { opacity: 0; transform: translateX(-40px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes ddSlideInRight {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes ddFadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ddFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.slide-in-left {
+    opacity: 0;
+    animation: ddSlideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.slide-in-right {
+    opacity: 0;
+    animation: ddSlideInRight 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+}
+
+.fade-up {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: ddFadeUp 0.6s ease forwards;
+}
+
+.fade-in {
+    opacity: 0;
+    animation: ddFadeIn 0.6s ease forwards;
+}
+
+/* Scroll-triggered */
+.animate-on-scroll {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    animation: dd-fallback-show 0s 1.5s forwards;
+}
+
+.animate-on-scroll.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    animation: none;
+}
+
+@keyframes dd-fallback-show {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Stagger children */
+.stagger-children > * {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    animation: dd-fallback-show 0s 2s forwards;
+}
+
+.stagger-children.is-visible > *:nth-child(1) { transition-delay: 0.1s; opacity: 1; transform: translateY(0); }
+.stagger-children.is-visible > *:nth-child(2) { transition-delay: 0.2s; opacity: 1; transform: translateY(0); }
+.stagger-children.is-visible > *:nth-child(3) { transition-delay: 0.3s; opacity: 1; transform: translateY(0); }
+.stagger-children.is-visible > *:nth-child(4) { transition-delay: 0.4s; opacity: 1; transform: translateY(0); }
+
+/* === Features Section === */
+.dingdong-features-section {
+    padding: 5rem 2rem;
+    background: #FFFFFF;
+}
+
+.dingdong-section-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--dd-soft);
+    padding: 0.35rem 0.9rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #604D53;
+}
+
+.dingdong-section-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--dd-accent);
+}
+
+.dingdong-feature-card {
+    background: #FFFFFF;
+    border: 1px solid #D5C5C8;
+    border-radius: 16px;
+    padding: 2rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dingdong-feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(96, 77, 83, 0.1);
+}
+
+.dingdong-feature-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--dd-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    color: var(--dd-accent);
+    font-weight: 700;
+}
+
+/* === Learning Steps Section === */
+.dingdong-steps-section {
+    background: linear-gradient(180deg, #FFF5F5 0%, #FFFFFF 100%);
+}
+
+.dingdong-step-card {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    background: #FFFFFF;
+    border: 1.5px solid var(--dd-soft);
+    border-radius: 16px;
+    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dingdong-step-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(219, 127, 142, 0.15);
+    border-color: var(--dd-accent);
+}
+
+.dingdong-step-num {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--dd-accent);
+    color: #FFFFFF;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.dingdong-step-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.dingdong-step-label {
+    font-family: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #604D53;
+}
+
+.dingdong-step-desc {
+    font-size: 0.75rem;
+    line-height: 1.55;
+    color: #604D53;
+    opacity: 0.6;
+    margin-top: 0.5rem;
+    padding: 0 0.25rem;
+}
+
+.dingdong-steps .wp-block-column + .wp-block-column::before {
+    content: '→';
+    position: absolute;
+    left: -0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--dd-mid);
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.dingdong-steps .wp-block-column {
+    position: relative;
+}
+
+/* === Courses Section === */
+.dingdong-courses-section {
+    padding: 5rem 2rem;
+    background: linear-gradient(180deg, #FFFFFF 0%, #FFF5F5 100%);
+}
+
+.dingdong-courses-section .wp-block-columns {
+    gap: 2rem;
+}
+
+.dingdong-course-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(96, 77, 83, 0.06);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dingdong-course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(96, 77, 83, 0.12);
+}
+
+.dingdong-course-thumb {
+    height: 160px;
+    border-radius: 16px 16px 0 0;
+}
+
+.dingdong-course-thumb-1 {
+    background: linear-gradient(135deg, var(--dd-accent), var(--dd-soft));
+}
+
+.dingdong-course-thumb-2 {
+    background: linear-gradient(135deg, #604D53, var(--dd-mid));
+}
+
+.dingdong-course-thumb-3 {
+    background: linear-gradient(135deg, var(--dd-mid), var(--dd-accent));
+}
+
+.dingdong-course-content {
+    padding: 1.5rem;
+}
+
+.dingdong-course-title {
+    font-family: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #604D53;
+    margin-bottom: 0.5rem;
+}
+
+.dingdong-course-desc {
+    font-size: 0.9rem;
+    color: #604D53;
+    opacity: 0.75;
+    line-height: 1.6;
+}
+
+/* === Newsletter Section === */
+.dingdong-newsletter-section {
+    padding: 5rem 2rem;
+    background: var(--dd-soft);
+    text-align: center;
+}
+
+.dingdong-newsletter-form {
+    display: flex;
+    gap: 0.75rem;
+    max-width: 480px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.dingdong-newsletter-form input[type="email"] {
+    flex: 1;
+    min-width: 240px;
+    padding: 0.9rem 1.25rem;
+    border: 1.5px solid #D5C5C8;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.dingdong-newsletter-form input[type="email"]:focus {
+    border-color: var(--dd-accent);
+}
+
+.dingdong-newsletter-form button {
+    background: var(--dd-accent);
+    color: #FFFFFF;
+    border: none;
+    padding: 0.9rem 1.75rem;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    box-shadow: 0 4px 16px var(--dd-accent-shadow);
+}
+
+.dingdong-newsletter-form button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px var(--dd-accent-shadow-hover);
+    background: var(--dd-accent-hover);
+}
+
+/* === Newsletter Popup === */
+.dd-newsletter-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 3rem 2.5rem;
+    text-align: center;
+    box-shadow: 0 24px 64px rgba(96, 77, 83, 0.2);
+    z-index: 10001;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    max-width: 380px;
+    width: 90%;
+}
+
+.dd-newsletter-popup.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.dd-newsletter-popup-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--dd-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+    font-size: 1.5rem;
+}
+
+.dd-newsletter-popup h4 {
+    font-family: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #604D53;
+    margin-bottom: 0.75rem;
+}
+
+.dd-newsletter-popup p {
+    font-size: 0.9rem;
+    color: #604D53;
+    opacity: 0.75;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.dd-newsletter-popup-close {
+    background: var(--dd-accent);
+    color: #FFFFFF;
+    border: none;
+    padding: 0.7rem 2rem;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.dd-newsletter-popup-close:hover {
+    background: var(--dd-accent-hover);
+}
+
+.dd-newsletter-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(96, 77, 83, 0.4);
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.dd-newsletter-overlay.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* === Footer === */
+.dingdong-footer {
+    background: #604D53;
+    color: #FFFFFF;
+    padding: 2.5rem 2rem;
+    text-align: center;
+}
+
+.dingdong-footer p {
+    color: #D5C5C8;
+    font-size: 0.85rem;
+}
+
+.dingdong-footer-btn .wp-block-button__link {
+    background: transparent !important;
+    color: #FFFFFF !important;
+    border: 1.5px solid #D5C5C8;
+    padding: 0.6rem 1.5rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+.dingdong-footer-btn .wp-block-button__link:hover {
+    border-color: var(--dd-accent);
+    background: var(--dd-accent) !important;
+}
+
+/* === Color Switcher === */
+.dd-color-switcher-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--dd-accent);
+    color: #FFFFFF;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 16px var(--dd-accent-shadow);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dd-color-switcher-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 24px var(--dd-accent-shadow-hover);
+}
+
+.dd-color-switcher-panel {
+    position: fixed;
+    bottom: 84px;
+    right: 24px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 8px 32px rgba(96, 77, 83, 0.15);
+    z-index: 9998;
+    display: none;
+    min-width: 180px;
+}
+
+.dd-color-switcher-panel.is-open {
+    display: block;
+}
+
+.dd-color-switcher-panel h4 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #604D53;
+    margin-bottom: 0.75rem;
+    letter-spacing: 0.02em;
+}
+
+.dd-color-option {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: opacity 0.2s ease;
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+.dd-color-option:hover {
+    opacity: 0.8;
+}
+
+.dd-color-option.is-active {
+    font-weight: 600;
+}
+
+.dd-color-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    transition: border-color 0.2s ease;
+}
+
+.dd-color-option.is-active .dd-color-swatch {
+    border-color: #604D53;
+}
+
+.dd-color-label {
+    font-size: 0.8rem;
+    color: #604D53;
+}
+
+/* === Contact Modal === */
+.dd-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(96, 77, 83, 0.5);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.dd-modal-overlay.is-open {
+    display: flex;
+}
+
+.dd-modal {
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 2.5rem;
+    max-width: 480px;
+    width: 100%;
+    position: relative;
+    box-shadow: 0 24px 64px rgba(96, 77, 83, 0.2);
+}
+
+.dd-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #F5F5F5;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #604D53;
+    transition: background 0.2s ease;
+}
+
+.dd-modal-close:hover {
+    background: #E0E0E0;
+}
+
+.dd-modal h3 {
+    font-family: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #604D53;
+    margin-bottom: 1.5rem;
+}
+
+.dd-modal-form label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #604D53;
+    margin-bottom: 0.35rem;
+}
+
+.dd-modal-form input,
+.dd-modal-form textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid #D5C5C8;
+    border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    margin-bottom: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.dd-modal-form input:focus,
+.dd-modal-form textarea:focus {
+    border-color: var(--dd-accent);
+}
+
+.dd-modal-form textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.dd-modal-form .dd-modal-submit {
+    width: 100%;
+    background: var(--dd-accent);
+    color: #FFFFFF;
+    border: none;
+    padding: 0.9rem;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    box-shadow: 0 4px 16px var(--dd-accent-shadow);
+}
+
+.dd-modal-form .dd-modal-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px var(--dd-accent-shadow-hover);
+    background: var(--dd-accent-hover);
+}
+
+/* === Card Layouts === */
+.equal-cards > .wp-block-column {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 0;
+}
+
+.equal-cards > .wp-block-column > .wp-block-group {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.equal-cards .cta-bottom {
+    margin-top: auto;
+    justify-content: center;
+}
+
+/* === Responsive === */
+@media (max-width: 900px) {
+    .dingdong-hero {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding-top: 120px;
+        min-height: auto;
+        gap: 3rem;
+    }
+
+    .dingdong-hero::before {
+        width: 300px;
+        height: 300px;
+        top: -60px;
+        left: -40px;
+    }
+
+    .dingdong-hero::after {
+        display: none;
+    }
+
+    .dingdong-hero-text::before {
+        font-size: 8rem;
+        top: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .dingdong-hero-text {
+        padding-right: 0;
+    }
+
+    .dingdong-hero-subtext {
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .dingdong-hero-chips {
+        justify-content: center;
+    }
+
+    .dingdong-hero-cta-group {
+        justify-content: center;
+    }
+
+    .dingdong-hero-stats {
+        justify-content: center;
+    }
+
+    .dingdong-hero-visual {
+        min-height: 350px;
+    }
+
+    .dingdong-hero-phone {
+        width: 220px;
+        height: 370px;
+        border-radius: 26px;
+    }
+
+    .dingdong-phone-hanzi {
+        font-size: 1.8rem;
+    }
+
+    .dingdong-phone-card {
+        margin: 1rem 1rem;
+        padding: 1.25rem;
+    }
+
+    .dingdong-nav {
+        display: none;
+    }
+
+    .dingdong-step-desc {
+        font-size: 0.7rem;
+    }
+
+    .dingdong-steps .wp-block-column + .wp-block-column::before {
+        display: none;
+    }
+}
+
+/* === Reduced Motion === */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+    .animate-on-scroll,
+    .fade-up,
+    .fade-in,
+    .slide-in-left,
+    .slide-in-right,
+    .stagger-children > * {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
+
+/* === Editor: keep animated content visible while editing === */
+.editor-styles-wrapper .fade-up,
+.editor-styles-wrapper .fade-in,
+.editor-styles-wrapper .slide-in-left,
+.editor-styles-wrapper .slide-in-right,
+.editor-styles-wrapper .animate-on-scroll,
+.editor-styles-wrapper .stagger-children > * {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+}

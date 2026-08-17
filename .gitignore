@@ -1,0 +1,90 @@
+# =============================================================
+#  DingDong LMS — .gitignore
+# -------------------------------------------------------------
+#  이 저장소의 루트는 WordPress 설치 전체이지만, 버전관리 대상은
+#  "직접 작성한 코드"뿐이다. 따라서 기본 정책은 전부 무시(/*)이고,
+#  추적할 경로만 명시적으로 되살린다(allowlist).
+#
+#  추적 대상:
+#    - wp-content/plugins/dingdong-lms/   (커스텀 플러그인)
+#    - wp-content/themes/dingdong/        (커스텀 블록 테마)
+#    - tests/                             (테스트 스위트)
+#    - README.md, 개발 규칙 문서, paper_images/ (개발 흐름도)
+#
+#  추적 제외:
+#    - WordPress Core (wp-admin, wp-includes, wp-*.php ...)
+#    - 서드파티 플러그인/테마, uploads, SQLite DB
+#    - .env, 빌드 산출물
+#    - 학위논문 원고 및 내부 작업 문서 (plugins/dingdong-lms/docs/,
+#      PROMPTS-EXTRACTED.md, REPORT-DingDong-LMS.md)
+# =============================================================
+
+# ---- 1. 기본: 루트의 모든 것을 무시 -------------------------
+/*
+
+# ---- 2. 루트에서 추적할 항목만 되살림 -----------------------
+!/.gitignore
+!/README.md
+!/AGENTS.md
+!/CLAUDE.md
+!/STUDIO.md
+!/design/
+!/tests/
+!/paper_images/
+!/.claude/
+!/.agents/
+!/wp-content/
+
+# ---- 3. .claude — 설정은 추적하되 로컬 개인 설정은 제외 -----
+/.claude/*
+!/.claude/launch.json
+!/.claude/skills/
+# 로컬 권한 허용목록: 머신마다 다르고 경로가 노출되므로 추적하지 않음
+/.claude/settings.local.json
+# 논문·내부 문서 동기화 스킬: 대상 문서(docs/)를 저장소에서 제외했으므로 함께 제외.
+# (로컬 절대경로도 포함하고 있어 공개 대상이 아니다)
+/.claude/skills/dingdong-docs-sync/
+
+/.agents/*
+!/.agents/skills/
+
+# ---- 4. wp-content — 커스텀 플러그인/테마만 --------------
+/wp-content/*
+!/wp-content/plugins/
+!/wp-content/themes/
+
+/wp-content/plugins/*
+!/wp-content/plugins/dingdong-lms/
+
+/wp-content/themes/*
+!/wp-content/themes/dingdong/
+
+# 학위논문 원고 · 내부 작업 문서 · 논문 빌드 스크립트는 저장소에 포함하지 않는다.
+/wp-content/plugins/dingdong-lms/docs/
+
+# uploads / DB / 로그는 어떤 경우에도 추적하지 않음
+/wp-content/uploads/
+/wp-content/database/
+/wp-content/db.php
+/wp-content/debug.log
+
+# ---- 5. 비밀정보 ------------------------------------------
+# 실제 자격증명은 절대 커밋하지 않는다. .env.example만 추적.
+.env
+.env.*
+*.pem
+*.key
+!*.key.example
+
+# ---- 6. 빌드 산출물 / 임시 파일 -----------------------------
+node_modules/
+vendor/
+*.zip
+*.log
+.DS_Store
+Thumbs.db
+# AGENTS.md 규칙: 임시 미리보기 파일을 플러그인 폴더에 만들지 말 것
+__*_preview.html
+
+# ---- 7. 예외: 예시 파일은 반드시 추적 -----------------------
+!/.env.example

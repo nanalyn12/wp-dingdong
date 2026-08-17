@@ -1,0 +1,287 @@
+/* ─── DD Pronunciation Coach ─── */
+
+/* Mic button on key expression cards
+   Note: layout/colors come from .dd-ke-btn--primary in dd-lesson.css.
+   This selector only adds the active-recording animation. */
+.dd-pron-mic.is-recording {
+    animation: ddPronMicPulse 1.1s ease-in-out infinite;
+}
+@keyframes ddPronMicPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(219,127,142,0.5), 0 2px 6px rgba(219,127,142,0.28); }
+    50%      { box-shadow: 0 0 0 10px rgba(219,127,142,0), 0 2px 6px rgba(219,127,142,0.28); }
+}
+
+/* Mic button in audiobook items */
+.dd-pron-mic-ab {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+/* Feedback panel */
+.dd-pron-feedback {
+    margin-top: 10px;
+    border-radius: 12px;
+    overflow: hidden;
+    animation: ddPronSlide 0.3s ease;
+}
+@keyframes ddPronSlide {
+    from { opacity: 0; max-height: 0; }
+    to { opacity: 1; max-height: 600px; }
+}
+
+/* Status messages */
+.dd-pron-status {
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    text-align: center;
+}
+.dd-pron-recording {
+    background: rgba(219,127,142,0.1);
+    color: var(--dd-primary);
+    animation: ddPronPulse 1.2s infinite;
+}
+@keyframes ddPronPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+.dd-pron-error {
+    background: #FFF3E0;
+    color: #E65100;
+}
+
+/* Result card */
+.dd-pron-result {
+    background: var(--dd-glass, rgba(255,255,255,0.55));
+    backdrop-filter: var(--dd-glass-blur, blur(16px));
+    border: 1px solid var(--dd-glass-border, rgba(255,255,255,0.5));
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.dd-pron-score-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.dd-pron-emoji { font-size: 32px; }
+.dd-pron-score-info { display: flex; flex-direction: column; }
+.dd-pron-score { font-size: 28px; font-weight: 700; color: #1a1a2e; }
+.dd-pron-score small { font-size: 14px; color: #888; margin-left: 2px; }
+.dd-pron-msg { font-size: 13px; color: #666; }
+
+/* Grade colors */
+.dd-pron-excellent .dd-pron-score { color: #2E7D32; }
+.dd-pron-good .dd-pron-score { color: #1565C0; }
+.dd-pron-fair .dd-pron-score { color: #E65100; }
+.dd-pron-retry .dd-pron-score { color: #C2185B; }
+
+/* Compare section */
+.dd-pron-compare {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.dd-pron-target, .dd-pron-spoken {
+    flex: 1;
+    background: rgba(0,0,0,0.03);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+.dd-pron-label {
+    display: block;
+    font-size: 10px;
+    color: #999;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.dd-pron-text {
+    font-size: 16px;
+    font-family: 'Noto Sans SC', sans-serif;
+    color: #333;
+}
+
+.dd-pron-best {
+    font-size: 12px;
+    color: #888;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+/* Action buttons */
+.dd-pron-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+.dd-pron-retry-btn, .dd-pron-listen-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.dd-pron-retry-btn {
+    background: var(--dd-primary, #DB7F8E);
+    color: #fff;
+}
+.dd-pron-retry-btn:hover { background: var(--dd-primary-hover, #c96e7d); }
+.dd-pron-listen-btn {
+    background: rgba(0,0,0,0.06);
+    color: #555;
+}
+.dd-pron-listen-btn:hover { background: rgba(0,0,0,0.1); }
+
+/* AI Analysis */
+.dd-pron-ai-loading {
+    text-align: center;
+    padding: 12px;
+    font-size: 13px;
+    color: #888;
+}
+.dd-pron-ai-result {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(156,39,176,0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(156,39,176,0.1);
+}
+.dd-pron-ai-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: #7B1FA2;
+    margin-bottom: 8px;
+}
+.dd-pron-ai-tone {
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+.dd-pron-ai-section {
+    margin-bottom: 8px;
+}
+.dd-pron-ai-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    display: block;
+    margin-bottom: 4px;
+}
+.dd-pron-ai-result ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.6;
+}
+.dd-pron-ai-encourage {
+    font-size: 13px;
+    color: #7B1FA2;
+    font-style: italic;
+    margin-top: 8px;
+}
+
+/* ─── 결과 모달 (중앙 팝업) ─────────────────────────── */
+.dd-pron-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(30, 20, 35, 0.45);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+.dd-pron-modal-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+body.dd-pron-modal-lock { overflow: hidden; }
+
+.dd-pron-modal {
+    position: relative;
+    width: min(460px, 94vw);
+    max-height: 88vh;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 20px;
+    padding: 26px 24px 22px;
+    box-shadow: 0 24px 70px rgba(40, 20, 50, 0.35);
+    transform: translateY(12px) scale(0.97);
+    transition: transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
+    -webkit-overflow-scrolling: touch;
+}
+.dd-pron-modal-overlay.is-open .dd-pron-modal {
+    transform: translateY(0) scale(1);
+}
+.dd-pron-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.06);
+    color: #555;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.dd-pron-modal-close:hover { background: rgba(0, 0, 0, 0.12); color: #222; }
+
+/* Target headline inside modal */
+.dd-pron-modal-target {
+    text-align: center;
+    font-size: 30px;
+    font-weight: 700;
+    font-family: 'Noto Sans SC', sans-serif;
+    color: #1a1a2e;
+    line-height: 1.25;
+    margin: 4px 24px 14px;
+    word-break: keep-all;
+}
+.dd-pron-modal-pinyin {
+    display: block;
+    font-size: 15px;
+    font-weight: 500;
+    color: #999;
+    font-family: inherit;
+    margin-top: 4px;
+}
+
+/* Result card sits flush inside the modal (no nested box) */
+.dd-pron-modal .dd-pron-result {
+    background: transparent;
+    border: none;
+    backdrop-filter: none;
+    padding: 0;
+}
+.dd-pron-modal .dd-pron-score-row {
+    justify-content: center;
+    margin-bottom: 16px;
+}
+.dd-pron-modal .dd-pron-score-info { align-items: center; text-align: center; }
+.dd-pron-modal .dd-pron-emoji { font-size: 40px; }
+.dd-pron-modal .dd-pron-score { font-size: 34px; }
+.dd-pron-modal .dd-pron-text { font-size: 18px; }
+.dd-pron-modal .dd-pron-actions { margin: 14px 0 4px; }
+.dd-pron-modal .dd-pron-ai-result { margin-top: 16px; }
+.dd-pron-modal .dd-pron-ai-result ul { font-size: 13.5px; }
+
+@media (max-width: 480px) {
+    .dd-pron-compare { flex-direction: column; }
+    .dd-pron-modal { padding: 22px 18px 18px; }
+    .dd-pron-modal-target { font-size: 26px; }
+}
