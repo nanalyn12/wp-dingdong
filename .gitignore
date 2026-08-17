@@ -25,6 +25,7 @@
 # ---- 2. 루트에서 추적할 항목만 되살림 -----------------------
 !/.gitignore
 !/README.md
+!/LICENSE
 !/AGENTS.md
 !/CLAUDE.md
 !/STUDIO.md
