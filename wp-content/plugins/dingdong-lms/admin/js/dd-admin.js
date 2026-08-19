@@ -1131,6 +1131,35 @@
 
         initBackup();
 
+        /**
+         * 백업/복원 메시지는 **버튼 바로 옆**에 띄운다.
+         *
+         * 페이지 맨 위의 공용 알림 자리(dd-settings-alert-container)는 이 카드에서
+         * 한참 위라, 스크롤을 내린 사용자에게는 화면 밖에서 떴다 사라진다.
+         * 실제로 "복원했는데 아무 알림도 없다"는 상황을 만들었던 부분이다.
+         * 오류는 자동으로 지우지 않는다 — 읽고 조치해야 하는 내용이므로.
+         */
+        function showBackupAlert(anchorId, type, message) {
+            const box = document.getElementById(anchorId);
+            if (!box) {
+                showAlert('dd-settings-alert-container', type, message);
+                return;
+            }
+
+            box.innerHTML = '';
+            const alert = document.createElement('div');
+            alert.className = 'dd-alert dd-alert-' + type;
+            alert.textContent = message;
+            box.appendChild(alert);
+            box.classList.remove('dd-hidden');
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    if (alert.parentNode === box) alert.remove();
+                }, 8000);
+            }
+        }
+
         function initBackup() {
             loadBackupInfo();
 
@@ -1250,10 +1279,10 @@
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
 
                 const total = (res.backup.counts && res.backup.counts.posts) || 0;
-                showAlert('dd-settings-alert-container', 'success',
+                showBackupAlert('dd-backup-alert', 'success',
                     `백업 성공 — 콘텐츠 ${total}건을 ${res.filename} 파일로 저장했습니다.`);
             } catch (err) {
-                showAlert('dd-settings-alert-container', 'error', '백업 실패: ' + describeError(err));
+                showBackupAlert('dd-backup-alert', 'error', '백업 실패: ' + describeError(err));
             }
 
             if (btn) { btn.disabled = false; btn.textContent = original; }
@@ -1264,12 +1293,12 @@
             const file = input && input.files && input.files[0];
 
             if (!file) {
-                showAlert('dd-settings-alert-container', 'error', '복원할 백업 파일을 선택하세요.');
+                showBackupAlert('dd-restore-alert', 'error', '복원할 백업 파일을 선택하세요.');
                 return;
             }
             const isZip = /\.zip$/i.test(file.name);
             if (!isZip && !/\.json$/i.test(file.name)) {
-                showAlert('dd-settings-alert-container', 'error',
+                showBackupAlert('dd-restore-alert', 'error',
                     '파일 형식이 잘못되었습니다. .json 또는 .zip 백업 파일을 선택하세요.');
                 return;
             }
@@ -1302,26 +1331,99 @@
                 form.append('restore_options', withOptions ? '1' : '0');
                 form.append('restore_media', withMedia ? '1' : '0');
 
-                let report;
-                try {
-                    report = await apiFetch({ path: API_BASE + '/backup/import', method: 'POST', body: form });
-                } catch (uploadErr) {
-                    // Playground 등에서 multipart 업로드가 막히면 본문을 직접 보낸다.
-                    // ZIP 은 텍스트로 보낼 수 없으므로 JSON 백업일 때만 시도한다.
-                    if (!isZip && uploadErr && /upload|no_file|multipart|empty/i.test(uploadErr.code || '')) {
-                        const text = await file.text();
-                        report = await apiFetch({
-                            path: API_BASE + '/backup/import',
-                            method: 'POST',
-                            data: {
-                                payload: text,
-                                _dd_nonce: (window.ddLms && window.ddLms.backupNonce) || '',
-                                mode: mode,
-                                safety_backup: safety ? '1' : '0',
-                                restore_options: withOptions ? '1' : '0'
-                            }
-                        });
-                    } else {
+                // 서버가 시간 제한 안에서 처리할 수 있는 만큼만 하고 done=false 로
+                // 돌려주므로, 끝날 때까지 같은 파일로 반복 호출한다.
+                // (공유호스팅의 30초 제한 때문에 한 번에 다 못 끝내는 경우가 흔하다)
+                let report = null;
+                let round = 0;
+                let offset = 0;
+                const MAX_ROUNDS = 200;
+
+                while (round < MAX_ROUNDS) {
+                    round++;
+                    if (btn) {
+                        btn.textContent = round === 1 ? '복원 중...' : `복원 중... (${round}회차)`;
+                    }
+
+                    const step = await sendRestore(buildForm());
+                    report = mergeReport(report, step);
+
+                    if (step.done !== false) break;
+
+                    // 서버가 알려준 위치부터 이어받는다. 이게 없으면 매번 처음부터
+                    // 다시 훑느라 뒤쪽 항목에 영영 도달하지 못한다.
+                    const advanced = (typeof step.next_offset === 'number') && step.next_offset > offset;
+                    if (!advanced) {
+                        showBackupAlert('dd-restore-alert', 'warning',
+                            '복원이 더 진행되지 않습니다. [데이터 복원]을 다시 누르거나 '
+                            + 'wp-content/uploads/dingdong-lms/debug.log 를 확인하세요.');
+                        break;
+                    }
+                    offset = step.next_offset;
+
+                    const pct = step.total ? Math.floor((offset / step.total) * 100) : 0;
+                    showBackupAlert('dd-restore-alert', 'info',
+                        `서버 시간 제한 때문에 나눠서 복원하고 있습니다.\n`
+                        + `${offset} / ${step.total} 건 (${pct}%) — 계속 진행 중입니다. 창을 닫지 마세요.`);
+                }
+
+                if (report && report.done === false) {
+                    showBackupAlert('dd-restore-alert', 'warning',
+                        '복원이 아직 끝나지 않았습니다. [데이터 복원]을 한 번 더 눌러 이어서 진행하세요.');
+                }
+
+                function buildForm() {
+                    const f = new FormData();
+                    f.append('file', file);
+                    f.append('_dd_nonce', (window.ddLms && window.ddLms.backupNonce) || '');
+                    f.append('mode', mode);
+                    f.append('safety_backup', (safety && round === 1) ? '1' : '0');
+                    f.append('restore_options', withOptions ? '1' : '0');
+                    f.append('restore_media', withMedia ? '1' : '0');
+                    f.append('offset', String(offset));
+                    return f;
+                }
+
+                /** 여러 회차의 결과를 하나로 합친다. */
+                function mergeReport(acc, step) {
+                    if (!acc) return step;
+                    // 회차마다 자기 구간만 보고하므로 전부 합산한다.
+                    ['created', 'updated', 'resumed', 'skipped', 'failed', 'options', 'terms'].forEach((k) => {
+                        acc[k] = (acc[k] || 0) + (step[k] || 0);
+                    });
+                    acc.done = step.done;
+                    acc.remaining = step.remaining;
+                    acc.total = step.total;
+                    acc.errors = (acc.errors || []).concat(step.errors || []);
+                    if (step.media) {
+                        acc.media = acc.media || { extracted: 0, skipped: 0, rejected: 0 };
+                        acc.media.extracted += step.media.extracted || 0;
+                        acc.media.skipped = step.media.skipped || 0;
+                        acc.media.rejected += step.media.rejected || 0;
+                    }
+                    return acc;
+                }
+
+                async function sendRestore(form) {
+                    try {
+                        return await apiFetch({ path: API_BASE + '/backup/import', method: 'POST', body: form });
+                    } catch (uploadErr) {
+                        // Playground 등에서 multipart 업로드가 막히면 본문을 직접 보낸다.
+                        // ZIP 은 텍스트로 보낼 수 없으므로 JSON 백업일 때만 시도한다.
+                        if (!isZip && uploadErr && /upload|no_file|multipart|empty/i.test(uploadErr.code || '')) {
+                            const text = await file.text();
+                            return await apiFetch({
+                                path: API_BASE + '/backup/import',
+                                method: 'POST',
+                                data: {
+                                    payload: text,
+                                    _dd_nonce: (window.ddLms && window.ddLms.backupNonce) || '',
+                                    mode: mode,
+                                    safety_backup: '0',
+                                    restore_options: withOptions ? '1' : '0'
+                                }
+                            });
+                        }
                         throw uploadErr;
                     }
                 }
@@ -1329,17 +1431,23 @@
                 renderRestoreReport(report);
 
                 if (report.failed > 0) {
-                    showAlert('dd-settings-alert-container', 'warning',
+                    showBackupAlert('dd-restore-alert', 'warning',
                         `일부 데이터 복원 실패 — 성공 ${report.created + report.updated}건 / 실패 ${report.failed}건`);
                 } else {
                     const resumed = report.resumed ? ` / 이어받음 ${report.resumed}건` : '';
-                    showAlert('dd-settings-alert-container', 'success',
+                    showBackupAlert('dd-restore-alert', 'success',
                         `복원 성공 — 새로 추가 ${report.created}건 / 덮어씀 ${report.updated}건 / 건너뜀 ${report.skipped}건${resumed}`);
                 }
 
                 loadBackupInfo();
             } catch (err) {
-                showAlert('dd-settings-alert-container', 'error', '복원 실패: ' + describeError(err));
+                // 타임아웃으로 응답이 끊긴 경우가 가장 흔하다. 이때는 서버에서 복원이
+                // 일부 진행됐을 수 있고, 다시 복원하면 이어받으므로 그 안내를 붙인다.
+                const cut = !err || err.code === 'invalid_json' || /JSON/.test(err.message || '');
+                showBackupAlert('dd-restore-alert', 'error',
+                    '복원 실패: ' + describeError(err)
+                    + (cut ? '\n\n같은 백업 파일로 [데이터 복원]을 한 번 더 누르면 멈춘 지점부터 이어받습니다. '
+                           + '반복해도 끝나지 않으면 wp-content/uploads/dingdong-lms/debug.log 를 확인하세요.' : ''));
             }
 
             if (btn) { btn.disabled = false; btn.textContent = original; }

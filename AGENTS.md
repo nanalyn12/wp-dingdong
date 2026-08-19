@@ -227,6 +227,16 @@ Claude Code의 `preview_start` / `__*_preview.html` 같은 별도 dev server는 
 - ⚠️ 항목별 오류 격리는 `catch (Exception)` **과 `catch (Error)` 둘 다** 필요하다. PHP 7+ 의 TypeError 는
   Exception 을 상속하지 않아, 하나만 잡으면 항목 하나의 오류가 요청 전체를 죽여 부분 복원을 만든다.
 - ⚠️ **`/backup/export` 는 POST 다.** 백업 생성은 포스트에 영구 UID 를 부여하는 쓰기 작업이라 GET 이면 안 된다.
+- ⚠️ **복원은 서버 실행 시간 제한 안에서 끊어서 처리한다** (규칙 20 과 같은 이유). `set_time_limit()` 은
+  공유호스팅에서 막혀 있어 믿을 수 없다. `time_budget()` 만큼만 일하고 `done:false` + `next_offset` 을
+  돌려주면 클라이언트가 그 위치부터 다시 호출한다. 지켜야 할 두 가지:
+  ① **`offset` 부터 시작**해야 한다 — 매번 처음부터 훑으면 앞부분만 반복하다 뒤쪽에 영영 도달하지 못한다.
+  ② **회차마다 최소 1건은 처리**해야 한다 — 예산이 소진된 채 들어오면 0건 처리 후 같은 위치를 돌려주어
+     무한 반복이 된다. 두 가지 모두 실제로 무한루프를 만들어 확인했다.
+- 복원 중 실패는 `DD_Backup::log()` 로 `uploads/dingdong-lms/debug.log` 에 `[BACKUP]` 태그로 남긴다.
+  실행 시간 초과·메모리 부족은 `catch` 로 못 잡으므로 `watch_for_fatal()` 의 shutdown 훅이 담당한다.
+- 백업/복원 알림은 **카드 안**(`#dd-backup-alert`/`#dd-restore-alert`)에 띄운다. 페이지 맨 위의 공용
+  알림 자리는 스크롤을 내린 사용자에게 보이지 않아 "아무 반응이 없다"가 된다.
 - 압축 폭탄 방어: 항목 수·장당 크기·총 해제량·압축비 상한(`MAX_ARCHIVE_ENTRIES` 등)을 **풀기 전에** 검사하고,
   `getFromIndex()` 로 통째로 읽지 말고 `extract_entry()` 로 청크 복사한다.
 - 백업 JSON 은 `DD_Backup::encode()` 로 만든다 — UTF-8 세척은 `iconv` 가 아니라 **바이트 단위 결정적 복구**다

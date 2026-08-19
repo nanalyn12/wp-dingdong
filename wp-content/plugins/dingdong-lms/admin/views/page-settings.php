@@ -203,6 +203,9 @@ if ( ! defined( 'ABSPATH' ) ) {
                 </a>
             </div>
 
+            <!-- 메시지는 이 카드 안에 띄운다. 페이지 맨 위 알림은 스크롤을 내리면 안 보인다. -->
+            <div id="dd-backup-alert" class="dd-mt-2 dd-hidden"></div>
+
             <div id="dd-backup-warnings" class="dd-mt-2 dd-hidden"></div>
 
             <p class="dd-help-text dd-mt-2" id="dd-backup-archive-note">
@@ -263,6 +266,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                 </button>
             </div>
 
+            <div id="dd-restore-alert" class="dd-mt-2 dd-hidden"></div>
             <div id="dd-restore-result" class="dd-mt-2 dd-hidden"></div>
         </div>
     </div>

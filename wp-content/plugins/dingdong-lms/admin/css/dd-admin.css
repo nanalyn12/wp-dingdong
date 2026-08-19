@@ -1295,6 +1295,14 @@
     gap: 0.5rem;
 }
 
+/* 백업/복원 알림은 여러 줄 안내를 담으므로 줄바꿈을 살린다 */
+#dd-backup-alert .dd-alert,
+#dd-restore-alert .dd-alert {
+    display: block;
+    white-space: pre-line;
+    line-height: 1.6;
+}
+
 /* 백업 파일 선택 input — 기존 .dd-input 과 높이를 맞춘다 */
 input[type="file"].dd-input {
     padding: 0.5rem 0.65rem;

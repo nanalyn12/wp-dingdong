@@ -94,6 +94,20 @@ class DD_Backup {
     /** 자동 안전 백업 보관 개수. */
     const KEEP_AUTO_BACKUPS = 5;
 
+    /* ---- 타임아웃 대응 ---- */
+
+    /**
+     * 한 요청에서 쓸 최대 작업 시간(초).
+     *
+     * ⚠️ `set_time_limit()` 은 공유호스팅에서 막혀 있는 경우가 많다. 그래서
+     *    "제한을 늘리는" 대신 **제한 안에서 끊어서** 처리하고 다음 요청에 이어받는다.
+     *    (AGENTS.md 규칙 20 이 강의 생성에 대해 이미 얻은 교훈과 같다)
+     */
+    const MAX_TIME_BUDGET = 20;
+
+    /** 실행 시간 제한을 알 수 없을 때 가정할 값(초). */
+    const ASSUMED_TIME_LIMIT = 30;
+
     /* ---- ZIP 아카이브 (JSON + 이미지 파일) ---- */
 
     /** ZIP 안의 백업 JSON 이름. */
@@ -506,6 +520,124 @@ class DD_Backup {
         }
 
         return array( 'ext' => $ext, 'size' => $size );
+    }
+
+    /**
+     * 이 요청에서 작업에 쓸 시간(초)을 정한다.
+     *
+     * 서버 제한의 절반만 쓰고 나머지는 응답을 돌려보낼 여유로 남긴다.
+     * 제한을 다 쓰면 PHP 가 죽어 500 이 되고, 사용자는 이유를 알 수 없다.
+     *
+     * @param int|string $limit ini_get('max_execution_time') 값 (0 = 무제한)
+     */
+    public static function time_budget( $limit ) {
+        $limit = is_numeric( $limit ) ? (int) $limit : 0;
+
+        // 0(무제한)이거나 이상한 값이면 짧게 가정한다 — 모르면 안전한 쪽.
+        if ( $limit <= 0 ) {
+            $limit = self::ASSUMED_TIME_LIMIT;
+        }
+
+        $budget = (int) floor( $limit / 2 );
+
+        if ( $budget > self::MAX_TIME_BUDGET ) {
+            $budget = self::MAX_TIME_BUDGET;
+        }
+
+        // 제한이 극단적으로 짧아도 최소한 몇 건은 처리해야 진행이 된다.
+        return max( 2, $budget );
+    }
+
+    /* =========================================================
+       진단 — 왜 실패했는지 남긴다
+       ========================================================= */
+
+    /**
+     * 백업/복원 진행 상황을 `uploads/dingdong-lms/debug.log` 에 남긴다.
+     *
+     * 500 만 뜨고 이유를 알 수 없는 상황을 없애기 위한 것이다.
+     * (플러그인의 기존 로그 파일을 그대로 쓰고 `[BACKUP]` 태그를 붙인다)
+     */
+    public static function log( $message ) {
+        $uploads = wp_upload_dir();
+        if ( ! empty( $uploads['error'] ) ) {
+            return;
+        }
+
+        $dir = trailingslashit( $uploads['basedir'] ) . 'dingdong-lms';
+        if ( ! wp_mkdir_p( $dir ) ) {
+            return;
+        }
+
+        $line = '[' . gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) ) . '] [BACKUP] '
+            . $message . "\n";
+
+        file_put_contents( trailingslashit( $dir ) . 'debug.log', $line, FILE_APPEND ); // phpcs:ignore
+    }
+
+    /**
+     * PHP 치명적 오류를 사람이 읽을 수 있는 안내로 바꾼다.
+     *
+     * `catch` 로는 잡을 수 없는 실행 시간 초과·메모리 부족을 shutdown 단계에서
+     * 알아보기 위한 것이다. 치명적 오류가 아니면 false.
+     *
+     * @param array|null $error error_get_last() 결과
+     * @return array|false array{reason:string, message:string, raw:string}
+     */
+    public static function explain_fatal( $error ) {
+        if ( ! is_array( $error ) || ! isset( $error['type'] ) ) {
+            return false;
+        }
+
+        $fatal_types = array( E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR );
+        if ( ! in_array( (int) $error['type'], $fatal_types, true ) ) {
+            return false;
+        }
+
+        $raw = isset( $error['message'] ) ? (string) $error['message'] : '';
+
+        if ( stripos( $raw, 'maximum execution time' ) !== false ) {
+            return array(
+                'reason'  => 'timeout',
+                'message' => '서버의 최대 실행 시간을 넘겨 복원이 중간에 멈췄습니다. '
+                    . '같은 백업 파일로 다시 복원하면 멈춘 지점부터 이어받습니다. '
+                    . '여러 번 반복해도 끝나지 않으면 호스팅에 PHP 실행 시간 상향을 요청하세요.',
+                'raw'     => $raw,
+            );
+        }
+
+        if ( stripos( $raw, 'memory size' ) !== false || stripos( $raw, 'out of memory' ) !== false ) {
+            return array(
+                'reason'  => 'memory',
+                'message' => '서버 메모리가 부족해 복원이 중단되었습니다. '
+                    . '이미지가 없는 JSON 백업으로 시도하거나, 호스팅에 PHP 메모리 상향을 요청하세요. '
+                    . '다시 복원하면 멈춘 지점부터 이어받습니다.',
+                'raw'     => $raw,
+            );
+        }
+
+        return array(
+            'reason'  => 'other',
+            'message' => '복원 중 서버 오류가 발생했습니다. 자세한 내용은 '
+                . 'wp-content/uploads/dingdong-lms/debug.log 를 확인하세요.',
+            'raw'     => $raw,
+        );
+    }
+
+    /**
+     * 이 요청이 치명적 오류로 죽으면 이유를 로그에 남기도록 등록한다.
+     *
+     * 실행 시간 초과·메모리 부족은 `catch` 로 잡을 수 없어서, 이 방법 말고는
+     * "왜 500 이 났는지" 알 길이 없다.
+     */
+    public static function watch_for_fatal( $context ) {
+        register_shutdown_function( function () use ( $context ) {
+            $explained = self::explain_fatal( error_get_last() );
+            if ( $explained === false ) {
+                return;
+            }
+            self::log( '치명적 오류(' . $explained['reason'] . ') during ' . $context . ' — ' . $explained['raw'] );
+        } );
     }
 
     /**
@@ -1088,7 +1220,9 @@ class DD_Backup {
      *
      * @return array|WP_Error array{data, media:{extracted,skipped,rejected}}
      */
-    public static function read_archive( $zip_path, $extract_media = true ) {
+    public static function read_archive( $zip_path, $extract_media = true, $time_budget = 0 ) {
+        $started = microtime( true );
+
         if ( ! class_exists( 'ZipArchive' ) ) {
             return new WP_Error(
                 'dd_backup_no_zip',
@@ -1118,7 +1252,7 @@ class DD_Backup {
             return $data;
         }
 
-        $media = array( 'extracted' => 0, 'skipped' => 0, 'rejected' => 0, 'bytes' => 0 );
+        $media = array( 'extracted' => 0, 'skipped' => 0, 'rejected' => 0, 'bytes' => 0, 'done' => true );
 
         // 파일 수 폭증 공격 차단 — 항목을 하나도 풀기 전에 본다.
         if ( $zip->numFiles > self::MAX_ARCHIVE_ENTRIES ) {
@@ -1140,6 +1274,13 @@ class DD_Backup {
             $dest = trailingslashit( $dest );
 
             for ( $i = 0; $i < $zip->numFiles; $i++ ) {
+                // 이미지가 많으면 여기서만 30초를 넘길 수 있다. 예산을 넘기면 멈추고,
+                // 이미 푼 파일은 다음 요청에서 "이미 있음"으로 건너뛰므로 이어서 진행된다.
+                if ( $time_budget > 0 && ( microtime( true ) - $started ) > $time_budget ) {
+                    $media['done'] = false;
+                    break;
+                }
+
                 $name = $zip->getNameIndex( $i );
                 if ( $name === self::ARCHIVE_ENTRY_JSON || $name === 'manifest.json' ) {
                     continue;
@@ -1343,9 +1484,18 @@ class DD_Backup {
             array(
                 'mode'            => 'skip',
                 'restore_options' => true,
+                // 0 = 시간 제한 없이 끝까지 (WP-CLI 용). 웹 요청은 반드시 예산을 준다.
+                'time_budget'     => 0,
+                // 이어서 복원할 시작 위치. 서버가 돌려준 next_offset 을 그대로 넣는다.
+                'offset'          => 0,
             ),
             is_array( $args ) ? $args : array()
         );
+
+        // 소수도 허용한다 — 경계를 테스트에서 강제할 수 있어야 하고, 정밀도가 높을수록 안전하다.
+        $budget  = (float) $args['time_budget'];
+        $offset  = max( 0, (int) $args['offset'] );
+        $started = microtime( true );
 
         $mode = in_array( $args['mode'], array( 'skip', 'replace', 'duplicate' ), true )
             ? $args['mode']
@@ -1363,6 +1513,12 @@ class DD_Backup {
             'terms'     => 0,
             'errors'    => array(),
             'warnings'  => array(),
+            // 시간 예산 안에 다 못 끝내면 done=false 로 돌려주고 다음 요청이 이어받는다.
+            'done'        => true,
+            'remaining'   => 0,
+            'total'       => count( $data['posts'] ),
+            'offset'      => max( 0, (int) $args['offset'] ),
+            'next_offset' => count( $data['posts'] ),
         );
 
         $uploads      = wp_upload_dir();
@@ -1375,7 +1531,36 @@ class DD_Backup {
         $entries  = array();  // 2단계에서 메타를 쓸 항목만
 
         /* --- 1단계: 포스트 먼저 전부 만든다 (참조 해결을 위해) --- */
+        $total         = count( $data['posts'] );
+        $position      = -1;
+        $next_offset   = $total;
+        $made_progress = false;
+
         foreach ( $data['posts'] as $index => $entry ) {
+            ++$position;
+
+            // ⚠️ 이미 처리한 구간은 **건너뛴 것으로 세지도 않고** 그냥 지나간다.
+            //    매번 처음부터 다시 훑으면, 예산이 빠듯할 때 앞부분만 반복하다가
+            //    뒤쪽 항목에 영영 도달하지 못한다 (실제로 그렇게 만들어 봤다).
+            if ( $position < $offset ) {
+                continue;
+            }
+
+            // 시간 예산을 넘기면 여기서 멈춘다. 남은 건 다음 요청이 이어받는다.
+            // 끝까지 밀어붙이면 PHP 가 죽어 500 이 되고 원인도 남지 않는다.
+            //
+            // ⚠️ `$made_progress` 조건이 핵심이다. 예산이 이미 소진된 채로 들어오면
+            //    한 건도 처리하지 못하고 같은 위치를 반복해 **영원히 끝나지 않는다.**
+            //    회차마다 최소 한 건은 반드시 진행시킨다.
+            if ( $made_progress && $budget > 0 && ( microtime( true ) - $started ) > $budget ) {
+                $report['done']      = false;
+                $next_offset         = $position;
+                $report['remaining'] = $total - $position;
+                break;
+            }
+
+            $made_progress = true;
+
             try {
                 $prepared = self::prepare_entry( $entry );
                 if ( is_wp_error( $prepared ) ) {
@@ -1440,6 +1625,8 @@ class DD_Backup {
                     'prepared' => $prepared,
                     'entry'    => $entry,
                     'index'    => $index,
+                    // 2단계가 중간에 멈추면 여기부터 다시 시작해야 한다.
+                    'pos'      => $position,
                     'rewrite'  => ( $action === 'replace' || $action === 'resume' ),
                 );
             } catch ( Exception $e ) {
@@ -1454,7 +1641,22 @@ class DD_Backup {
         }
 
         /* --- 2단계: 메타·텀 (이제 모든 새 ID 를 알고 있다) --- */
+        $meta_done = 0;
+
         foreach ( $entries as $item ) {
+            // 여기서 멈추면 이 항목부터 다시 해야 한다. 미완료 표식이 남아 있으므로
+            // 다음 요청이 resume 으로 이어받는다.
+            //
+            // ⚠️ 여기서도 최소 한 건은 끝내야 한다. 안 그러면 1단계가 만들어 둔
+            //    항목의 위치로 되돌아가기만 하고 진도가 나가지 않는다.
+            if ( $meta_done > 0 && $budget > 0 && ( microtime( true ) - $started ) > $budget ) {
+                $report['done']      = false;
+                $next_offset         = $item['pos'];
+                $report['remaining'] = $total - $item['pos'];
+                break;
+            }
+
+            ++$meta_done;
             $new_id   = $item['new_id'];
             $prepared = $item['prepared'];
 
@@ -1464,6 +1666,17 @@ class DD_Backup {
                     self::clear_our_meta( $new_id );
                     update_post_meta( $new_id, self::UID_META, $prepared['uid'] );
                     update_post_meta( $new_id, self::INCOMPLETE_META, '1' );
+                }
+
+                // 여러 요청에 나눠 복원하면 참조 대상(강좌)이 **이전 요청**에서
+                // 만들어졌을 수 있다. 메모리 맵에 없으면 DB 에서 uid 로 찾아 채운다.
+                foreach ( $prepared['refs'] as $ref_uid ) {
+                    if ( ! isset( $uid_map[ $ref_uid ] ) ) {
+                        $ref_found = self::find_existing( $ref_uid );
+                        if ( $ref_found['id'] ) {
+                            $uid_map[ $ref_uid ] = $ref_found['id'];
+                        }
+                    }
                 }
 
                 $meta = self::remap_refs(
@@ -1493,8 +1706,8 @@ class DD_Backup {
             }
         }
 
-        /* --- 3단계: 설정값 --- */
-        if ( $args['restore_options'] ) {
+        /* --- 3단계: 설정값 (콘텐츠를 다 끝낸 뒤에만) --- */
+        if ( $args['restore_options'] && $report['done'] ) {
             $options = self::filter_options( $data['options'] );
             foreach ( $options as $key => $value ) {
                 update_option( $key, self::sanitize_option_value( $key, $value ) );
@@ -1504,6 +1717,13 @@ class DD_Backup {
 
         if ( $report['failed'] > 0 ) {
             $report['warnings'][] = $report['failed'] . '건은 복원하지 못했습니다. 나머지는 정상 복원되었습니다.';
+        }
+
+        $report['next_offset'] = $next_offset;
+
+        if ( ! $report['done'] ) {
+            $report['warnings'][] = '서버 시간 제한에 맞춰 ' . $next_offset . '/' . $total
+                . ' 까지 처리했습니다. 이어서 진행합니다.';
         }
 
         return $report;

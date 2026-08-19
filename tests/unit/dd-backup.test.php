@@ -509,3 +509,81 @@ test( '빈 경로는 거부한다', function () {
     assert_false( DD_Backup::is_inside( '', '/var/www/uploads' ) );
     assert_false( DD_Backup::is_inside( '/var/www/uploads/a.png', '' ) );
 } );
+
+/* =============================================================
+   14) 치명적 오류를 사람이 읽을 수 있는 안내로 바꾼다
+   ============================================================= */
+
+test( '★ 실행 시간 초과를 알아보고 원인을 짚어 준다', function () {
+    $res = DD_Backup::explain_fatal( array(
+        'type'    => E_ERROR,
+        'message' => 'Maximum execution time of 30 seconds exceeded',
+        'file'    => '/x/class-dd-backup.php',
+        'line'    => 100,
+    ) );
+
+    assert_same( 'timeout', $res['reason'] );
+    assert_contains( '시간', $res['message'] );
+    assert_contains( '다시', $res['message'], '재시도하면 이어받는다는 안내가 있어야 함' );
+} );
+
+test( '★ 메모리 부족을 알아본다', function () {
+    $res = DD_Backup::explain_fatal( array(
+        'type'    => E_ERROR,
+        'message' => 'Allowed memory size of 268435456 bytes exhausted (tried to allocate 20480 bytes)',
+        'file'    => '/x/class-dd-backup.php',
+        'line'    => 100,
+    ) );
+
+    assert_same( 'memory', $res['reason'] );
+    assert_contains( '메모리', $res['message'] );
+} );
+
+test( '그 밖의 치명적 오류도 안내 문구를 만든다', function () {
+    $res = DD_Backup::explain_fatal( array(
+        'type'    => E_ERROR,
+        'message' => 'Call to undefined function foo()',
+        'file'    => '/x/class-dd-backup.php',
+        'line'    => 42,
+    ) );
+
+    assert_same( 'other', $res['reason'] );
+    assert_not_empty( $res['message'] );
+} );
+
+test( '치명적이지 않은 오류(경고)는 무시한다', function () {
+    assert_false( DD_Backup::explain_fatal( array( 'type' => E_WARNING, 'message' => 'x', 'file' => '', 'line' => 0 ) ) );
+    assert_false( DD_Backup::explain_fatal( array( 'type' => E_NOTICE, 'message' => 'x', 'file' => '', 'line' => 0 ) ) );
+    assert_false( DD_Backup::explain_fatal( null ) );
+} );
+
+/* =============================================================
+   15) 타임아웃 대응 — 서버 제한 안에서 끊어서 처리한다
+   ============================================================= */
+
+test( '★ 서버 실행 시간 제한보다 넉넉히 앞서 멈추도록 예산을 잡는다', function () {
+    // 30초 제한이면 그 안에서 여유를 두고 끝내야 500 이 아니라 "이어서 진행"이 된다.
+    $budget = DD_Backup::time_budget( 30 );
+    assert_true( $budget > 0 && $budget < 30, '예산 ' . $budget . '초' );
+    assert_true( $budget <= 20, '제한의 절반 이하로 잡아야 안전 — 실제 ' . $budget );
+} );
+
+test( '실행 시간 제한이 넉넉하면 예산도 늘지만 상한이 있다', function () {
+    assert_true( DD_Backup::time_budget( 300 ) >= DD_Backup::time_budget( 30 ) );
+    assert_true( DD_Backup::time_budget( 300 ) <= DD_Backup::MAX_TIME_BUDGET );
+} );
+
+test( '★ 제한이 0(무제한)이어도 무한정 잡지 않는다', function () {
+    $budget = DD_Backup::time_budget( 0 );
+    assert_true( $budget > 0 && $budget <= DD_Backup::MAX_TIME_BUDGET, '예산 ' . $budget . '초' );
+} );
+
+test( '제한이 아주 짧아도 최소 한 건은 처리할 예산을 준다', function () {
+    assert_true( DD_Backup::time_budget( 5 ) >= 2, '예산 ' . DD_Backup::time_budget( 5 ) . '초' );
+    assert_true( DD_Backup::time_budget( 1 ) >= 2 );
+} );
+
+test( '이상한 값이 들어와도 안전한 기본값을 쓴다', function () {
+    assert_true( DD_Backup::time_budget( -10 ) > 0 );
+    assert_true( DD_Backup::time_budget( 'abc' ) > 0 );
+} );

@@ -1483,6 +1483,30 @@ class DD_Rest_API {
     public static function backup_import( $request ) {
         @set_time_limit( 300 );
 
+        // 실행 시간 초과·메모리 부족은 catch 로 잡을 수 없다. 죽더라도 이유가
+        // debug.log 에 남도록 shutdown 감시를 먼저 걸어 둔다.
+        DD_Backup::watch_for_fatal( '복원(backup_import)' );
+        DD_Backup::log( '복원 시작 — PHP 제한: 실행 ' . ini_get( 'max_execution_time' ) . '초 / 메모리 ' . ini_get( 'memory_limit' ) );
+
+        try {
+            return self::run_backup_import( $request );
+        } catch ( \Exception $e ) {
+            DD_Backup::log( '복원 예외: ' . $e->getMessage() );
+            return new WP_Error( 'dd_backup_failed', '복원 중 오류가 발생했습니다: ' . $e->getMessage(), array( 'status' => 500 ) );
+        } catch ( \Error $e ) {
+            DD_Backup::log( '복원 오류: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine() );
+            return new WP_Error(
+                'dd_backup_failed',
+                '복원 중 서버 오류가 발생했습니다. wp-content/uploads/dingdong-lms/debug.log 를 확인하세요. ('
+                    . $e->getMessage() . ')',
+                array( 'status' => 500 )
+            );
+        }
+    }
+
+    /** 실제 복원 절차. 오류 포착은 backup_import() 가 감싼다. */
+    private static function run_backup_import( $request ) {
+
         // 권한은 permission_callback 이 이미 확인했다.
         // 되돌리기 어려운 작업이므로 전용 nonce 로 CSRF 를 한 번 더 막는다.
         $nonce = $request->get_param( '_dd_nonce' );
@@ -1496,6 +1520,10 @@ class DD_Rest_API {
 
         $restore_media = $request->get_param( 'restore_media' );
         $restore_media = ( $restore_media === null ) ? true : rest_sanitize_boolean( $restore_media );
+
+        // 서버 실행 시간 제한 안에서 끊어서 처리한다. 못 끝내면 done=false 로
+        // 돌려주고, 클라이언트가 같은 파일로 다시 호출해 이어받는다.
+        $budget = DD_Backup::time_budget( ini_get( 'max_execution_time' ) );
 
         $data        = null;
         $media_stats = null;
@@ -1519,8 +1547,10 @@ class DD_Rest_API {
                 );
             }
 
+            DD_Backup::log( '업로드 접수: ' . $ext . ' / ' . size_format( (int) $checked['size'] ) );
+
             if ( $ext === 'zip' ) {
-                $archive = DD_Backup::read_archive( $file['tmp_name'], $restore_media );
+                $archive = DD_Backup::read_archive( $file['tmp_name'], $restore_media, $budget );
                 @unlink( $file['tmp_name'] );
 
                 if ( is_wp_error( $archive ) ) {
@@ -1573,13 +1603,31 @@ class DD_Rest_API {
             }
         }
 
+        DD_Backup::log( '복원 대상 ' . count( $data['posts'] ) . '건 / 모드 ' . $mode . ' — 시작' );
+        $started = microtime( true );
+
         $report = DD_Backup::import( $data, array(
             'mode'            => $mode,
             'restore_options' => $restore_options,
+            'time_budget'     => $budget,
+            // 이어서 복원할 위치. 클라이언트가 직전 응답의 next_offset 을 돌려준다.
+            'offset'          => absint( $request->get_param( 'offset' ) ),
         ) );
 
         if ( is_wp_error( $report ) ) {
+            DD_Backup::log( '복원 실패: ' . $report->get_error_message() );
             return $report;
+        }
+
+        DD_Backup::log( sprintf(
+            '복원 완료 — 생성 %d / 덮어씀 %d / 이어받음 %d / 건너뜀 %d / 실패 %d (%.1f초)',
+            $report['created'], $report['updated'], $report['resumed'],
+            $report['skipped'], $report['failed'], microtime( true ) - $started
+        ) );
+
+        // 이미지 해제가 남았어도 아직 끝난 게 아니다.
+        if ( is_array( $media_stats ) && isset( $media_stats['done'] ) && ! $media_stats['done'] ) {
+            $report['done'] = false;
         }
 
         $report['safety_backup'] = $safety_note;
