@@ -309,3 +309,203 @@ function dd_backup_fixture() {
         'tables'         => array(),
     );
 }
+
+/* =============================================================
+   8) C-1 — 중단된 복원을 이어받는다 (부분 복원 영구 잔존 방지)
+   ============================================================= */
+
+test( '★ 백업에 없던 콘텐츠는 새로 만든다', function () {
+    assert_same( 'insert', DD_Backup::decide_action( 0, false, 'skip' ) );
+} );
+
+test( '★ 이미 온전히 있는 콘텐츠는 건너뛴다', function () {
+    assert_same( 'skip', DD_Backup::decide_action( 42, false, 'skip' ) );
+} );
+
+test( '★ 복원이 중간에 끊긴 콘텐츠는 건너뛰지 않고 이어받는다', function () {
+    // 예전 동작: skip → 껍데기만 남은 강의가 영구히 고쳐지지 않았다.
+    assert_same( 'resume', DD_Backup::decide_action( 42, true, 'skip' ) );
+    assert_same( 'resume', DD_Backup::decide_action( 42, true, 'replace' ) );
+} );
+
+test( '덮어쓰기 모드는 온전한 콘텐츠도 교체한다', function () {
+    assert_same( 'replace', DD_Backup::decide_action( 42, false, 'replace' ) );
+} );
+
+test( '항상 새로 추가 모드는 기존 콘텐츠를 보지 않는다', function () {
+    assert_same( 'insert', DD_Backup::decide_action( 42, false, 'duplicate' ) );
+    assert_same( 'insert', DD_Backup::decide_action( 42, true, 'duplicate' ) );
+} );
+
+test( '미완료 표식은 백업 파일에 담기지 않는다', function () {
+    $meta = DD_Backup::filter_meta( array(
+        DD_Backup::UID_META        => 'uid-1',
+        DD_Backup::INCOMPLETE_META => '1',
+        '_dd_slides_data'          => '[]',
+    ) );
+    assert_false( array_key_exists( DD_Backup::UID_META, $meta ) );
+    assert_false( array_key_exists( DD_Backup::INCOMPLETE_META, $meta ), '내부 표식이 백업에 새면 안 됨' );
+    assert_same( '[]', $meta['_dd_slides_data'] );
+} );
+
+/* =============================================================
+   9) H-1 — 압축 폭탄 방어
+   ============================================================= */
+
+test( '정상 크기의 이미지는 통과한다', function () {
+    assert_same( '', DD_Backup::archive_entry_rejection( 1500000, 1400000, 0 ) );
+} );
+
+test( '★ 항목 하나가 상한을 넘으면 거부한다', function () {
+    $over = DD_Backup::MAX_MEDIA_FILE_BYTES + 1;
+    assert_same( 'too_large', DD_Backup::archive_entry_rejection( $over, 1000, 0 ) );
+} );
+
+test( '★ 누적 해제 용량이 상한을 넘으면 거부한다', function () {
+    $reason = DD_Backup::archive_entry_rejection( 1048576, 1000000, DD_Backup::MAX_EXTRACT_BYTES );
+    assert_same( 'quota', $reason );
+} );
+
+test( '★ 압축 폭탄(비정상 압축비)을 거부한다', function () {
+    // 1KB → 100MB 로 풀리는 전형적 zip bomb. (크기 상한에서 먼저 걸린다)
+    assert_not_empty( DD_Backup::archive_entry_rejection( 104857600, 1024, 0 ) );
+
+    // 크기 상한은 통과하지만 압축비만으로 잡아야 하는 경우 (1KB → 10MB).
+    assert_same( 'ratio', DD_Backup::archive_entry_rejection( 10485760, 1024, 0 ) );
+} );
+
+test( '작은 파일의 높은 압축비는 오탐하지 않는다', function () {
+    // 단색 PNG 등은 정상적으로도 압축비가 높다 — 큰 파일에만 비율을 적용해야 한다
+    assert_same( '', DD_Backup::archive_entry_rejection( 300000, 500, 0 ) );
+} );
+
+/* =============================================================
+   10) H-4 — 업로드 필드 검증 (배열 주입으로 500 나지 않게)
+   ============================================================= */
+
+test( '정상 업로드는 확장자를 돌려준다', function () {
+    $ok = DD_Backup::inspect_upload( array(
+        'name' => 'dingdong-lms-backup-2026-08-17.json', 'tmp_name' => '/tmp/php123',
+        'size' => 1000, 'error' => 0,
+    ) );
+    assert_false( is_wp_error( $ok ) );
+    assert_same( 'json', $ok['ext'] );
+
+    $zip = DD_Backup::inspect_upload( array(
+        'name' => 'backup.zip', 'tmp_name' => '/tmp/php124', 'size' => 999999999, 'error' => 0,
+    ) );
+    assert_same( 'zip', $zip['ext'], 'ZIP 은 JSON 용량 상한을 적용하지 않는다' );
+} );
+
+test( '★ tmp_name 이 배열이면 500 대신 오류를 돌려준다', function () {
+    $res = DD_Backup::inspect_upload( array(
+        'name' => 'a.json', 'tmp_name' => array( '/tmp/a', '/tmp/b' ), 'size' => 10, 'error' => 0,
+    ) );
+    assert_true( is_wp_error( $res ) );
+    assert_same( 'dd_backup_upload_error', $res->get_error_code() );
+} );
+
+test( '★ name 이 배열이면 오류를 돌려준다', function () {
+    $res = DD_Backup::inspect_upload( array(
+        'name' => array( 'a.json' ), 'tmp_name' => '/tmp/a', 'size' => 10, 'error' => 0,
+    ) );
+    assert_true( is_wp_error( $res ) );
+} );
+
+test( '업로드 오류 코드가 있으면 거부한다', function () {
+    $res = DD_Backup::inspect_upload( array( 'name' => 'a.json', 'tmp_name' => '/tmp/a', 'size' => 0, 'error' => 1 ) );
+    assert_true( is_wp_error( $res ) );
+} );
+
+test( '허용하지 않는 확장자를 거부한다', function () {
+    foreach ( array( 'a.php', 'a.sql', 'a.json.php', 'a' ) as $name ) {
+        $res = DD_Backup::inspect_upload( array( 'name' => $name, 'tmp_name' => '/tmp/a', 'size' => 10, 'error' => 0 ) );
+        assert_true( is_wp_error( $res ), $name . ' 이 통과됨' );
+    }
+} );
+
+test( 'JSON 은 용량 상한을 넘으면 거부한다', function () {
+    $res = DD_Backup::inspect_upload( array(
+        'name' => 'a.json', 'tmp_name' => '/tmp/a', 'size' => DD_Backup::MAX_BYTES + 1, 'error' => 0,
+    ) );
+    assert_true( is_wp_error( $res ) );
+    assert_same( 'dd_backup_too_large', $res->get_error_code() );
+} );
+
+/* =============================================================
+   11) B-2 — 깨진 UTF-8 때문에 백업 전체가 실패하지 않게
+   ============================================================= */
+
+test( '정상 한글·중국어는 그대로 보존된다', function () {
+    $in  = array( 'ko' => '안녕하세요', 'zh' => '你好', 'n' => 3, 'b' => true, 'nil' => null );
+    $out = DD_Backup::scrub_utf8( $in );
+    assert_same( '안녕하세요', $out['ko'] );
+    assert_same( '你好', $out['zh'] );
+    assert_same( 3, $out['n'] );
+    assert_same( true, $out['b'] );
+} );
+
+test( '★ 깨진 UTF-8 이 섞여 있어도 JSON 인코딩에 성공한다', function () {
+    // "\xB0\xA1" 은 EUC-KR '가' — UTF-8 로는 잘못된 바이트열이다.
+    $dirty = array( 'title' => "정상 텍스트 \xB0\xA1 뒤쪽", 'nested' => array( "\xFF\xFE" ) );
+
+    assert_false( json_encode( $dirty ) !== false, '전제 확인: 원본은 인코딩에 실패해야 함' );
+
+    $clean = DD_Backup::scrub_utf8( $dirty );
+    assert_not_same( false, json_encode( $clean ), '세척 후에는 인코딩에 성공해야 함' );
+    // ⚠️ 한글이 통째로 사라지면 안 된다 — iconv 에 의존하던 구현이 런타임에 따라
+    //    한글을 전부 날리는 것을 실사이트에서 확인했다. 이 단언이 그 회귀를 막는다.
+    assert_contains( '정상 텍스트', $clean['title'], '멀쩡한 부분은 살아남아야 함' );
+    assert_contains( '뒤쪽', $clean['title'] );
+    assert_same( '', $clean['nested'][0], '복구 불가능한 바이트만 있으면 빈 문자열' );
+} );
+
+test( '배열 키에 깨진 바이트가 있어도 처리한다', function () {
+    $clean = DD_Backup::scrub_utf8( array( "\xB0\xA1key" => '값' ) );
+    assert_not_same( false, json_encode( $clean ) );
+} );
+
+/* =============================================================
+   12) M-2 — .htaccess 가 통하지 않는 서버를 알아본다
+   ============================================================= */
+
+test( 'Apache 계열에서는 .htaccess 보호가 유효하다', function () {
+    assert_true( DD_Backup::htaccess_effective( 'Apache/2.4.57 (Unix)' ) );
+    assert_true( DD_Backup::htaccess_effective( 'LiteSpeed' ) );
+    assert_true( DD_Backup::htaccess_effective( 'Apache' ) );
+} );
+
+test( '★ nginx 에서는 .htaccess 가 무시되므로 보호되지 않는다고 판단한다', function () {
+    assert_false( DD_Backup::htaccess_effective( 'nginx/1.24.0' ) );
+    assert_false( DD_Backup::htaccess_effective( 'Microsoft-IIS/10.0' ) );
+    assert_false( DD_Backup::htaccess_effective( '' ), '알 수 없는 서버는 안전한 쪽으로 가정한다' );
+} );
+
+/* =============================================================
+   13) M-3 — 최종 경로가 허용 폴더 안인지 확인 (심층 방어)
+   ============================================================= */
+
+test( '허용 폴더 안의 경로는 통과한다', function () {
+    assert_true( DD_Backup::is_inside( '/var/www/uploads/dingdong-lms/a.png', '/var/www/uploads/dingdong-lms' ) );
+    assert_true( DD_Backup::is_inside( '/var/www/uploads/dingdong-lms/sub/a.png', '/var/www/uploads/dingdong-lms/' ) );
+} );
+
+test( '★ 허용 폴더 밖의 경로를 거부한다', function () {
+    assert_false( DD_Backup::is_inside( '/var/www/wp-config.php', '/var/www/uploads/dingdong-lms' ) );
+    assert_false( DD_Backup::is_inside( '/etc/passwd', '/var/www/uploads/dingdong-lms' ) );
+} );
+
+test( '★ 이름만 비슷한 옆 폴더를 안쪽으로 착각하지 않는다', function () {
+    // 단순 문자열 prefix 비교였다면 통과해 버리는 고전적 실수
+    assert_false( DD_Backup::is_inside( '/var/www/uploads/dingdong-lms-evil/a.png', '/var/www/uploads/dingdong-lms' ) );
+} );
+
+test( 'Windows 역슬래시 경로도 같은 기준으로 판단한다', function () {
+    assert_true( DD_Backup::is_inside( 'C:\site\uploads\dingdong-lms\a.png', 'C:\site\uploads\dingdong-lms' ) );
+    assert_false( DD_Backup::is_inside( 'C:\site\wp-config.php', 'C:\site\uploads\dingdong-lms' ) );
+} );
+
+test( '빈 경로는 거부한다', function () {
+    assert_false( DD_Backup::is_inside( '', '/var/www/uploads' ) );
+    assert_false( DD_Backup::is_inside( '/var/www/uploads/a.png', '' ) );
+} );

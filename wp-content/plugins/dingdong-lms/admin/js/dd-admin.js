@@ -1157,6 +1157,7 @@
 
                 renderArchiveNote(info);
                 renderUploadLimit(info);
+                renderWarnings(info);
             } catch (err) {
                 statusEl.className = 'dd-status-indicator dd-status-inactive';
                 statusEl.querySelector('.dd-status-text').textContent = '확인 불가';
@@ -1186,6 +1187,36 @@
                     : '');
         }
 
+        /** 백업에서 빠지는 것·서버 환경 문제를 미리 알려 준다. */
+        function renderWarnings(info) {
+            const box = document.getElementById('dd-backup-warnings');
+            if (!box || !info) return;
+
+            const notes = [];
+
+            if (info.trashed > 0) {
+                notes.push(`휴지통에 있는 콘텐츠 ${info.trashed}건은 백업에 포함되지 않습니다. `
+                    + '보존하려면 먼저 복원(휴지통에서 꺼내기)한 뒤 백업하세요.');
+            }
+
+            if (info.backup_dir && info.backup_dir.protected === false) {
+                notes.push('이 서버(' + escapeHtml(info.backup_dir.server || '알 수 없음') + ')는 .htaccess 를 '
+                    + '읽지 않아 백업 폴더를 웹에서 막지 못합니다. 복원 전 자동 백업 파일은 추측하기 어려운 '
+                    + '무작위 이름으로 저장되지만, 민감한 사이트라면 uploads/dingdong-lms/backups/ 에 대한 '
+                    + '접근 차단을 서버 설정에 직접 추가하세요.');
+            }
+
+            if (notes.length === 0) {
+                box.classList.add('dd-hidden');
+                box.innerHTML = '';
+                return;
+            }
+
+            box.innerHTML = '<div class="dd-info-box"><strong>알아두실 점</strong><br>'
+                + notes.map((n) => '· ' + n).join('<br>') + '</div>';
+            box.classList.remove('dd-hidden');
+        }
+
         function renderUploadLimit(info) {
             const el = document.getElementById('dd-restore-limit');
             if (el && info && info.upload_limit) {
@@ -1203,7 +1234,8 @@
             if (btn) { btn.disabled = true; btn.textContent = '백업 준비 중...'; }
 
             try {
-                const res = await apiFetch({ path: API_BASE + '/backup/export' });
+                // POST 다 — 백업 생성은 포스트에 고유 식별자를 부여하는 쓰기 작업이다.
+                const res = await apiFetch({ path: API_BASE + '/backup/export', method: 'POST' });
                 if (!res || !res.backup) throw new Error('백업 데이터를 받지 못했습니다.');
 
                 const json = JSON.stringify(res.backup, null, 2);
@@ -1300,8 +1332,9 @@
                     showAlert('dd-settings-alert-container', 'warning',
                         `일부 데이터 복원 실패 — 성공 ${report.created + report.updated}건 / 실패 ${report.failed}건`);
                 } else {
+                    const resumed = report.resumed ? ` / 이어받음 ${report.resumed}건` : '';
                     showAlert('dd-settings-alert-container', 'success',
-                        `복원 성공 — 새로 추가 ${report.created}건 / 덮어씀 ${report.updated}건 / 건너뜀 ${report.skipped}건`);
+                        `복원 성공 — 새로 추가 ${report.created}건 / 덮어씀 ${report.updated}건 / 건너뜀 ${report.skipped}건${resumed}`);
                 }
 
                 loadBackupInfo();
@@ -1323,6 +1356,11 @@
                 ['복원 실패', report.failed + '건'],
                 ['복원된 설정값', report.options + '개']
             ];
+
+            // 지난번 복원이 중간에 끊겼던 항목을 이어받았을 때만 보여 준다.
+            if (report.resumed) {
+                rows.splice(2, 0, ['이전에 끊겼다가 이어받은 콘텐츠', report.resumed + '건']);
+            }
 
             if (report.media) {
                 rows.push(['복원된 이미지 파일', report.media.extracted + '개']);

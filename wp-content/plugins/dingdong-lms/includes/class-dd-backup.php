@@ -80,6 +80,17 @@ class DD_Backup {
     /** 백업/복원 사이에서 동일 콘텐츠를 알아보는 영구 식별자. */
     const UID_META = '_dd_backup_uid';
 
+    /**
+     * "이 포스트는 복원이 끝나지 않았다"는 표식.
+     *
+     * ⚠️ 이게 없으면 치명적인 함정이 생긴다. 복원은 ①포스트 생성 → ②메타 기록
+     *    2단계인데, 그 사이에서 타임아웃이 나면 껍데기 포스트만 남는다. 그런데
+     *    UID 는 이미 기록돼 있으므로 다시 복원해도 "이미 있음"으로 **건너뛰어**
+     *    영원히 고쳐지지 않는다. 그래서 ①에서 이 표식을 세우고 ②가 끝나야 지운다.
+     *    표식이 남아 있는 포스트를 만나면 건너뛰지 않고 **이어받는다**(resume).
+     */
+    const INCOMPLETE_META = '_dd_backup_incomplete';
+
     /** 자동 안전 백업 보관 개수. */
     const KEEP_AUTO_BACKUPS = 5;
 
@@ -99,6 +110,26 @@ class DD_Backup {
      *    임의 코드 실행으로 이어진다. SVG 도 스크립트를 품을 수 있어 제외한다.
      */
     const MEDIA_EXTENSIONS = array( 'png', 'jpg', 'jpeg', 'gif', 'webp' );
+
+    /* ---- 압축 폭탄(decompression bomb) 방어 상한 ---- */
+
+    /** ZIP 안 항목 개수 상한. 파일 수 폭증으로 inode·디스크를 고갈시키는 공격을 막는다. */
+    const MAX_ARCHIVE_ENTRIES = 5000;
+
+    /** 이미지 1장의 압축 해제 크기 상한 (20MB). */
+    const MAX_MEDIA_FILE_BYTES = 20971520;
+
+    /** 한 번의 복원에서 풀 수 있는 총량 상한 (500MB). */
+    const MAX_EXTRACT_BYTES = 524288000;
+
+    /** 허용 압축비. 1KB → 100MB 같은 전형적 zip bomb 을 걸러낸다. */
+    const MAX_COMPRESSION_RATIO = 100;
+
+    /**
+     * 압축비 검사를 적용할 최소 크기 (1MB).
+     * 단색 PNG 처럼 작고 정상적으로 압축비가 높은 파일을 오탐하지 않기 위한 하한.
+     */
+    const RATIO_CHECK_MIN_BYTES = 1048576;
 
     /* =========================================================
        내보내기
@@ -145,7 +176,9 @@ class DD_Backup {
 
         $uploads = wp_upload_dir();
 
-        return array(
+        // ⚠️ 마지막에 반드시 UTF-8 세척을 거친다. 메타 어딘가에 잘못된 바이트가
+        //    하나만 있어도 json_encode 가 통째로 실패해 백업이 안 만들어진다.
+        return self::scrub_utf8( array(
             'format'         => self::FORMAT,
             'format_version' => self::FORMAT_VERSION,
             'plugin'         => 'dingdong-lms',
@@ -171,7 +204,7 @@ class DD_Backup {
                 '공개 공유 토큰은 백업에 포함되지 않으며 복원 시 새로 발급됩니다.',
                 '이미지 파일 자체는 백업에 포함되지 않습니다 (wp-content/uploads/dingdong-lms/). 다른 사이트로 옮길 때는 이 폴더를 함께 복사하세요.',
             ),
-        );
+        ) );
     }
 
     /**
@@ -259,12 +292,18 @@ class DD_Backup {
         }
 
         $uid = get_post_meta( $post_id, self::UID_META, true );
-        if ( ! is_string( $uid ) || $uid === '' ) {
-            $uid = wp_generate_uuid4();
-            update_post_meta( $post_id, self::UID_META, $uid );
+        if ( is_string( $uid ) && $uid !== '' ) {
+            return $uid;
         }
 
-        return $uid;
+        update_post_meta( $post_id, self::UID_META, wp_generate_uuid4() );
+
+        // ⚠️ 저장이 실제로 됐는지 확인한다. 저장에 실패했는데 생성한 uid 를 그대로
+        //    반환하면, 다음 백업에서 또 다른 uid 가 생겨 "같은 콘텐츠"임을 알아보지
+        //    못하고 복원할 때마다 사본이 쌓인다.
+        $stored = get_post_meta( $post_id, self::UID_META, true );
+
+        return ( is_string( $stored ) && $stored !== '' ) ? $stored : '';
     }
 
     /** get_post_meta($id) 의 [key => [값,...]] 을 [key => 값] 으로 편다. */
@@ -340,7 +379,8 @@ class DD_Backup {
             if ( in_array( $key, self::TOKEN_META_KEYS, true ) ) {
                 continue;
             }
-            if ( $key === self::UID_META ) {
+            // 내부 표식은 백업에 담지 않는다 (담기면 복원 사이트에서 오작동한다).
+            if ( $key === self::UID_META || $key === self::INCOMPLETE_META ) {
                 continue;
             }
             $out[ $key ] = $value;
@@ -352,6 +392,248 @@ class DD_Backup {
     /** 우리가 복원해도 되는 post_type 인가. */
     public static function is_supported_post_type( $type ) {
         return in_array( $type, self::POST_TYPES, true );
+    }
+
+    /* =========================================================
+       복원 판단 / 입력 검증 (순수 함수)
+       ========================================================= */
+
+    /**
+     * 이 항목을 어떻게 처리할지 결정한다.
+     *
+     * @param int    $existing_id 같은 uid 의 기존 포스트 ID (없으면 0)
+     * @param bool   $incomplete  그 포스트의 복원이 중단된 상태인가
+     * @param string $mode        skip | replace | duplicate
+     * @return string insert | skip | replace | resume
+     */
+    public static function decide_action( $existing_id, $incomplete, $mode ) {
+        if ( $mode === 'duplicate' ) {
+            return 'insert';
+        }
+
+        if ( ! $existing_id ) {
+            return 'insert';
+        }
+
+        // 중단된 복원은 모드와 무관하게 이어받는다.
+        // 여기서 skip 하면 껍데기 포스트가 영구히 남는다.
+        if ( $incomplete ) {
+            return 'resume';
+        }
+
+        return $mode === 'replace' ? 'replace' : 'skip';
+    }
+
+    /**
+     * ZIP 항목 하나를 풀어도 되는지 판단한다 (압축 폭탄 방어).
+     *
+     * @param int $uncompressed  압축 해제 후 크기 (ZIP 헤더가 주장하는 값)
+     * @param int $compressed    압축된 크기
+     * @param int $running_total 지금까지 푼 누적 바이트
+     * @return string '' = 통과, 아니면 거부 사유 (too_large|quota|ratio)
+     */
+    public static function archive_entry_rejection( $uncompressed, $compressed, $running_total ) {
+        $uncompressed = (int) $uncompressed;
+        $compressed   = (int) $compressed;
+
+        if ( $uncompressed > self::MAX_MEDIA_FILE_BYTES ) {
+            return 'too_large';
+        }
+
+        if ( $running_total + $uncompressed > self::MAX_EXTRACT_BYTES ) {
+            return 'quota';
+        }
+
+        if ( $uncompressed >= self::RATIO_CHECK_MIN_BYTES && $compressed > 0
+            && ( $uncompressed / $compressed ) > self::MAX_COMPRESSION_RATIO ) {
+            return 'ratio';
+        }
+
+        return '';
+    }
+
+    /**
+     * 업로드된 파일 정보를 검증한다.
+     *
+     * ⚠️ `$_FILES` 의 하위 값은 문자열이라고 **가정하면 안 된다.** `file[]` 로 보내면
+     *    배열이 되고, PHP 8 에서 `is_uploaded_file(array)` 는 TypeError → 500 이다.
+     *    클라이언트가 보낸 MIME(`type`)은 위조 가능하므로 쓰지 않는다.
+     *
+     * @return array|WP_Error array{ext:string}
+     */
+    public static function inspect_upload( $file ) {
+        if ( ! is_array( $file ) ) {
+            return new WP_Error( 'dd_backup_upload_error', '업로드된 파일을 읽을 수 없습니다.', array( 'status' => 400 ) );
+        }
+
+        if ( ! empty( $file['error'] ) ) {
+            return new WP_Error(
+                'dd_backup_upload_error',
+                '파일 업로드에 실패했습니다 (오류 코드 ' . ( is_scalar( $file['error'] ) ? (int) $file['error'] : 0 ) . ').',
+                array( 'status' => 400 )
+            );
+        }
+
+        // 다중 업로드(file[])로 배열이 들어오면 여기서 막는다.
+        foreach ( array( 'name', 'tmp_name' ) as $field ) {
+            if ( ! isset( $file[ $field ] ) || ! is_string( $file[ $field ] ) || $file[ $field ] === '' ) {
+                return new WP_Error(
+                    'dd_backup_upload_error',
+                    '업로드된 파일을 읽을 수 없습니다. 파일 하나만 선택했는지 확인하세요.',
+                    array( 'status' => 400 )
+                );
+            }
+        }
+
+        $ext = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
+        if ( ! in_array( $ext, array( 'json', 'zip' ), true ) ) {
+            return new WP_Error(
+                'dd_backup_bad_extension',
+                '.json 또는 .zip 백업 파일만 업로드할 수 있습니다.',
+                array( 'status' => 400 )
+            );
+        }
+
+        $size = isset( $file['size'] ) && is_scalar( $file['size'] ) ? (int) $file['size'] : 0;
+
+        // JSON 은 통째로 메모리에 올리므로 상한을 둔다. ZIP 은 디스크에서 스트리밍한다.
+        if ( $ext === 'json' && $size > self::MAX_BYTES ) {
+            return new WP_Error(
+                'dd_backup_too_large',
+                '백업 파일이 너무 큽니다 (최대 ' . size_format_fallback( self::MAX_BYTES ) . ').',
+                array( 'status' => 413 )
+            );
+        }
+
+        return array( 'ext' => $ext, 'size' => $size );
+    }
+
+    /**
+     * 이 서버에서 `.htaccess` 로 파일 접근을 막을 수 있는가.
+     *
+     * nginx·IIS 는 `.htaccess` 를 아예 읽지 않는다. 그런 서버에서는 백업 폴더가
+     * 사실상 공개 상태이므로, 관리자에게 알려 스스로 조치하게 해야 한다.
+     * 알 수 없는 서버는 **보호되지 않는다고 가정**한다 (안전한 쪽).
+     */
+    public static function htaccess_effective( $server_software ) {
+        if ( ! is_string( $server_software ) || $server_software === '' ) {
+            return false;
+        }
+        return (bool) preg_match( '/apache|litespeed/i', $server_software );
+    }
+
+    /**
+     * `$path` 가 `$base` 폴더 **안쪽**인지 확인한다.
+     *
+     * ⚠️ 단순 문자열 prefix 비교는 `/uploads/dd` 와 `/uploads/dd-evil` 을 구분하지
+     *    못한다. 경계에 구분자를 붙여 비교해야 한다.
+     */
+    public static function is_inside( $path, $base ) {
+        if ( ! is_string( $path ) || ! is_string( $base ) || $path === '' || $base === '' ) {
+            return false;
+        }
+
+        $path = rtrim( str_replace( '\\', '/', $path ), '/' );
+        $base = rtrim( str_replace( '\\', '/', $base ), '/' );
+
+        if ( $path === $base ) {
+            return true;
+        }
+
+        return strpos( $path, $base . '/' ) === 0;
+    }
+
+    /**
+     * 깨진 UTF-8 바이트를 걸러낸다.
+     *
+     * ⚠️ 이게 없으면 메타 어딘가에 잘못된 바이트가 **하나만** 있어도
+     *    `json_encode()` 가 false 를 반환해 **백업 전체가 실패**한다.
+     *    (외부 자막·AI 응답에서 실제로 섞여 들어올 수 있다)
+     *    mbstring 에 의존하지 않는다 — PHP-WASM 안전 (AGENTS.md 규칙 19 와 같은 이유).
+     */
+    public static function scrub_utf8( $node ) {
+        if ( is_array( $node ) ) {
+            $out = array();
+            foreach ( $node as $key => $value ) {
+                $clean_key         = is_string( $key ) ? self::scrub_utf8_string( $key ) : $key;
+                $out[ $clean_key ] = self::scrub_utf8( $value );
+            }
+            return $out;
+        }
+
+        if ( is_string( $node ) ) {
+            return self::scrub_utf8_string( $node );
+        }
+
+        return $node;
+    }
+
+    /**
+     * 문자열 하나를 유효한 UTF-8 로 만든다. 정상 문자열은 그대로 통과한다.
+     *
+     * ⚠️ `iconv()`·`htmlspecialchars()` 에 의존하지 않는다. 이 둘은 런타임마다
+     *    결과가 달라서(PHP CLI 에서는 한글이 살아남지만 Playground/PHP-WASM 에서는
+     *    통째로 비워지는 것을 실제로 확인했다) 백업 내용이 환경에 따라 바뀐다.
+     *    그래서 유효한 UTF-8 시퀀스만 남기는 **결정적 바이트 단위 복구**를 쓴다.
+     *    (mbstring 비의존 — DD_Chinese 와 같은 이유)
+     */
+    private static function scrub_utf8_string( $text ) {
+        // preg 의 /u 는 유효한 UTF-8 일 때만 매치에 성공한다.
+        if ( preg_match( '//u', $text ) === 1 ) {
+            return $text;
+        }
+
+        // 유효한 시퀀스는 그대로 두고($1), 그 외 바이트는 버린다(.).
+        $repaired = preg_replace(
+            '/(
+                  [\x00-\x7F]                          # 1바이트 (ASCII)
+                | [\xC2-\xDF][\x80-\xBF]               # 2바이트
+                | \xE0[\xA0-\xBF][\x80-\xBF]           # 3바이트
+                | [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}
+                | \xED[\x80-\x9F][\x80-\xBF]           # 서로게이트 제외
+                | \xF0[\x90-\xBF][\x80-\xBF]{2}        # 4바이트
+                | [\xF1-\xF3][\x80-\xBF]{3}
+                | \xF4[\x80-\x8F][\x80-\xBF]{2}
+            )|./xs',
+            '$1',
+            $text
+        );
+
+        if ( is_string( $repaired ) && preg_match( '//u', $repaired ) === 1 ) {
+            return $repaired;
+        }
+
+        // 최후 수단 — ASCII 만 남긴다 (일부 손실 < 백업 전체 실패).
+        return preg_replace( '/[^\x20-\x7E\r\n\t]/', '', $text );
+    }
+
+    /**
+     * 백업 문서를 JSON 문자열로 만든다.
+     * 인코딩 실패를 조용히 넘기지 않고 오류로 돌려준다.
+     *
+     * @return string|WP_Error
+     */
+    public static function encode( $data, $pretty = true ) {
+        $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+        if ( $pretty ) {
+            $flags |= JSON_PRETTY_PRINT;
+        }
+
+        $json = wp_json_encode( $data, $flags );
+
+        if ( $json === false ) {
+            // export() 가 이미 세척하지만, 혹시 남은 경우를 위한 2차 시도.
+            $json = wp_json_encode( self::scrub_utf8( $data ), $flags );
+        }
+
+        if ( $json === false ) {
+            return new WP_Error(
+                'dd_backup_encode_failed',
+                '백업 데이터를 JSON 으로 변환하지 못했습니다 (콘텐츠에 손상된 문자가 있을 수 있습니다).'
+            );
+        }
+
+        return $json;
     }
 
     /* =========================================================
@@ -689,10 +971,25 @@ class DD_Backup {
             new RecursiveDirectoryIterator( $dir, FilesystemIterator::SKIP_DOTS )
         );
 
+        $real_dir = realpath( $dir );
+
         foreach ( $it as $file ) {
             if ( ! $file->isFile() ) {
                 continue;
             }
+
+            // ⚠️ 심볼릭 링크는 백업하지 않는다. `evil.png → /var/www/.env` 처럼
+            //    확장자만 이미지로 위장한 링크가 있으면 서버 파일이 백업 ZIP 에 담긴다.
+            if ( $file->isLink() ) {
+                continue;
+            }
+
+            // 링크가 아니어도 최종 실경로가 폴더 밖이면 제외한다 (심층 방어).
+            $real_file = realpath( $file->getPathname() );
+            if ( $real_dir === false || $real_file === false || ! self::is_inside( $real_file, $real_dir ) ) {
+                continue;
+            }
+
             $relative = str_replace( '\\', '/', substr( $file->getPathname(), strlen( $dir ) + 1 ) );
             if ( self::should_archive_file( $relative ) ) {
                 $out[] = $relative;
@@ -724,10 +1021,13 @@ class DD_Backup {
             return $dir;
         }
 
-        $json = wp_json_encode( self::export(), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT );
-        if ( $json === false ) {
-            return new WP_Error( 'dd_backup_encode_failed', '백업 데이터를 만들지 못했습니다.' );
+        $json = self::encode( self::export() );
+        if ( is_wp_error( $json ) ) {
+            return $json;
         }
+
+        // 이전 다운로드가 중단돼 남은 임시 ZIP 을 먼저 치운다 (1시간 이상 된 것).
+        self::sweep_stale_archives( $dir );
 
         $file = self::archive_filename( current_time( 'timestamp' ) );
         $path = trailingslashit( $dir ) . 'tmp-' . wp_generate_password( 12, false, false ) . '-' . $file;
@@ -820,6 +1120,17 @@ class DD_Backup {
 
         $media = array( 'extracted' => 0, 'skipped' => 0, 'rejected' => 0, 'bytes' => 0 );
 
+        // 파일 수 폭증 공격 차단 — 항목을 하나도 풀기 전에 본다.
+        if ( $zip->numFiles > self::MAX_ARCHIVE_ENTRIES ) {
+            $zip->close();
+            return new WP_Error(
+                'dd_backup_too_many_files',
+                'ZIP 안의 파일이 너무 많습니다 (' . (int) $zip->numFiles . '개 / 최대 '
+                    . self::MAX_ARCHIVE_ENTRIES . '개).',
+                array( 'status' => 400 )
+            );
+        }
+
         if ( $extract_media ) {
             $dest = self::media_dir();
             if ( $dest === '' || ! wp_mkdir_p( $dest ) ) {
@@ -855,20 +1166,94 @@ class DD_Backup {
                     continue;
                 }
 
-                $contents = $zip->getFromIndex( $i );
-                if ( $contents === false || file_put_contents( $target, $contents ) === false ) { // phpcs:ignore
+                // 문자열 검사(safe_archive_path)를 통과했더라도, 실제로 해석된 경로가
+                // 업로드 폴더 안인지 마지막으로 한 번 더 확인한다 (심층 방어).
+                // uploads/dingdong-lms 자체가 심볼릭 링크인 경우까지 잡아낸다.
+                $real_base = realpath( $dest );
+                $real_dir  = realpath( dirname( $target ) );
+                if ( $real_base === false || $real_dir === false || ! self::is_inside( $real_dir, $real_base ) ) {
+                    ++$media['rejected'];
+                    continue;
+                }
+
+                // 압축 폭탄 방어 — ZIP 헤더가 주장하는 크기·압축비를 풀기 전에 본다.
+                $stat         = $zip->statIndex( $i );
+                $uncompressed = is_array( $stat ) && isset( $stat['size'] ) ? (int) $stat['size'] : 0;
+                $compressed   = is_array( $stat ) && isset( $stat['comp_size'] ) ? (int) $stat['comp_size'] : 0;
+
+                if ( self::archive_entry_rejection( $uncompressed, $compressed, $media['bytes'] ) !== '' ) {
+                    ++$media['rejected'];
+                    continue;
+                }
+
+                // 헤더는 거짓말할 수 있으므로, 스트림으로 조금씩 옮기면서 실제 크기도 센다.
+                $written = self::extract_entry( $zip, $i, $target, $uncompressed );
+                if ( $written === false ) {
                     ++$media['rejected'];
                     continue;
                 }
 
                 ++$media['extracted'];
-                $media['bytes'] += strlen( $contents );
+                $media['bytes'] += $written;
             }
         }
 
         $zip->close();
 
         return array( 'data' => $data, 'media' => $media );
+    }
+
+    /**
+     * ZIP 항목 하나를 스트림으로 꺼내 파일에 쓴다.
+     *
+     * 통째로 메모리에 올리지 않고 256KB 씩 옮기며, 선언된 크기를 넘어서면
+     * 즉시 중단하고 쓰다 만 파일을 지운다 (헤더를 위조한 폭탄 대응).
+     *
+     * @return int|false 실제로 쓴 바이트 수, 실패 시 false
+     */
+    private static function extract_entry( $zip, $index, $target, $declared_size ) {
+        $in = $zip->getStream( $zip->getNameIndex( $index ) );
+        if ( ! $in ) {
+            return false;
+        }
+
+        $out = @fopen( $target, 'wb' ); // phpcs:ignore
+        if ( ! $out ) {
+            fclose( $in );
+            return false;
+        }
+
+        // 헤더 값이 0 이거나 이상해도 상한을 넘지 못하게 한다.
+        $limit   = max( 1, min( (int) $declared_size, self::MAX_MEDIA_FILE_BYTES ) );
+        $written = 0;
+        $failed  = false;
+
+        while ( ! feof( $in ) ) {
+            $chunk = fread( $in, 262144 );
+            if ( $chunk === false ) {
+                $failed = true;
+                break;
+            }
+            $written += strlen( $chunk );
+            if ( $written > $limit ) {
+                $failed = true; // 선언한 것보다 크게 부풀어 나온다 = 폭탄
+                break;
+            }
+            if ( fwrite( $out, $chunk ) === false ) {
+                $failed = true;
+                break;
+            }
+        }
+
+        fclose( $in );
+        fclose( $out );
+
+        if ( $failed ) {
+            @unlink( $target ); // phpcs:ignore
+            return false;
+        }
+
+        return $written;
     }
 
     /**
@@ -893,21 +1278,43 @@ class DD_Backup {
             wp_die( esc_html( $result->get_error_message() ), '백업 실패', array( 'response' => 500 ) );
         }
 
-        nocache_headers();
-        header( 'Content-Type: application/zip' );
-        header( 'Content-Disposition: attachment; filename="' . $result['file'] . '"' );
-        header( 'Content-Length: ' . $result['bytes'] );
-        header( 'X-Content-Type-Options: nosniff' );
+        $path = $result['path'];
+
+        // ⚠️ 전송이 어떤 이유로 끊겨도 임시 ZIP 을 반드시 지운다.
+        //    이 파일에는 사이트 콘텐츠 전체가 들어 있고 uploads 아래에 있으므로,
+        //    남으면 곧바로 정보 유출이 된다. (readfile 뒤 한 줄에만 의존하면 안 된다)
+        register_shutdown_function( function () use ( $path ) {
+            if ( file_exists( $path ) ) {
+                @unlink( $path ); // phpcs:ignore
+            }
+        } );
+
+        // 사용자가 다운로드를 취소해도 정리 코드까지는 실행되도록 한다.
+        @ignore_user_abort( true ); // phpcs:ignore
+
+        // 서버측 압축이 켜져 있으면 Content-Length 와 실제 전송량이 어긋나
+        // ZIP 이 잘린 채 저장된다. 이 응답에 한해 압축을 끈다.
+        if ( function_exists( 'apache_setenv' ) ) {
+            @apache_setenv( 'no-gzip', '1' ); // phpcs:ignore
+        }
+        @ini_set( 'zlib.output_compression', 'Off' ); // phpcs:ignore
 
         // 버퍼를 비우고 스트리밍한다 — 147MB 를 메모리에 올리지 않기 위해.
         while ( ob_get_level() > 0 ) {
             ob_end_clean();
         }
 
-        readfile( $result['path'] );
+        nocache_headers();
+        header( 'Content-Type: application/zip' );
+        header( 'Content-Disposition: attachment; filename="' . $result['file'] . '"' );
+        header( 'Content-Length: ' . $result['bytes'] );
+        header( 'Content-Transfer-Encoding: binary' );
+        header( 'X-Content-Type-Options: nosniff' );
 
-        // 백업본을 서버에 남기지 않는다.
-        @unlink( $result['path'] ); // phpcs:ignore
+        readfile( $path );
+
+        // 백업본을 서버에 남기지 않는다 (shutdown 함수가 2중으로 보장한다).
+        @unlink( $path ); // phpcs:ignore
 
         exit;
     }
@@ -948,6 +1355,7 @@ class DD_Backup {
             'mode'      => $mode,
             'created'   => 0,
             'updated'   => 0,
+            'resumed'   => 0,
             'skipped'   => 0,
             'failed'    => 0,
             'by_type'   => array(),
@@ -976,19 +1384,21 @@ class DD_Backup {
                     continue;
                 }
 
-                $existing = ( $mode === 'duplicate' ) ? 0 : self::find_by_uid( $prepared['uid'] );
+                $found  = ( $mode === 'duplicate' ) ? array( 'id' => 0, 'incomplete' => false )
+                                                    : self::find_existing( $prepared['uid'] );
+                $action = self::decide_action( $found['id'], $found['incomplete'], $mode );
 
-                if ( $existing && $mode === 'skip' ) {
+                if ( $action === 'skip' ) {
                     ++$report['skipped'];
-                    $uid_map[ $prepared['uid'] ]      = $existing;
-                    $id_map[ $prepared['original_id'] ] = $existing;
+                    $uid_map[ $prepared['uid'] ]      = $found['id'];
+                    $id_map[ $prepared['original_id'] ] = $found['id'];
                     continue;
                 }
 
                 $postarr = self::rewrite_uploads_url( $prepared['post'], $from_uploads, $to_uploads );
 
-                if ( $existing && $mode === 'replace' ) {
-                    $postarr['ID'] = $existing;
+                if ( $action === 'replace' || $action === 'resume' ) {
+                    $postarr['ID'] = $found['id'];
                     $result        = wp_update_post( $postarr, true );
                 } else {
                     // ID 는 절대 지정하지 않는다 — WordPress 가 충돌 없는 새 ID 를 발급한다.
@@ -1005,8 +1415,10 @@ class DD_Backup {
 
                 $new_id = (int) $result;
 
-                if ( $existing && $mode === 'replace' ) {
+                if ( $action === 'replace' ) {
                     ++$report['updated'];
+                } elseif ( $action === 'resume' ) {
+                    ++$report['resumed'];
                 } else {
                     ++$report['created'];
                     $created[] = $new_id;
@@ -1015,7 +1427,10 @@ class DD_Backup {
                 $type = $prepared['post']['post_type'];
                 $report['by_type'][ $type ] = ( isset( $report['by_type'][ $type ] ) ? $report['by_type'][ $type ] : 0 ) + 1;
 
+                // uid 와 함께 "아직 안 끝났다" 표식을 세운다. 2단계가 끝나야 지운다.
+                // 이렇게 해야 중간에 끊겨도 다음 복원이 이어받을 수 있다.
                 update_post_meta( $new_id, self::UID_META, $prepared['uid'] );
+                update_post_meta( $new_id, self::INCOMPLETE_META, '1' );
 
                 $uid_map[ $prepared['uid'] ]        = $new_id;
                 $id_map[ $prepared['original_id'] ] = $new_id;
@@ -1025,9 +1440,14 @@ class DD_Backup {
                     'prepared' => $prepared,
                     'entry'    => $entry,
                     'index'    => $index,
-                    'replaced' => (bool) ( $existing && $mode === 'replace' ),
+                    'rewrite'  => ( $action === 'replace' || $action === 'resume' ),
                 );
             } catch ( Exception $e ) {
+                ++$report['failed'];
+                $report['errors'][] = self::describe_entry( $entry, $index ) . ' — ' . $e->getMessage();
+            } catch ( Error $e ) {
+                // PHP 7+ 의 TypeError 등은 Exception 을 상속하지 않는다.
+                // 이걸 빼면 항목 하나의 오류가 요청 전체를 죽여 부분 복원 상태를 만든다.
                 ++$report['failed'];
                 $report['errors'][] = self::describe_entry( $entry, $index ) . ' — ' . $e->getMessage();
             }
@@ -1039,10 +1459,11 @@ class DD_Backup {
             $prepared = $item['prepared'];
 
             try {
-                if ( $item['replaced'] ) {
-                    // 덮어쓰기 모드에서만 우리 메타를 정리한다. 남의 메타는 건드리지 않는다.
+                if ( $item['rewrite'] ) {
+                    // 덮어쓰기·이어받기에서만 우리 메타를 정리한다. 남의 메타는 건드리지 않는다.
                     self::clear_our_meta( $new_id );
                     update_post_meta( $new_id, self::UID_META, $prepared['uid'] );
+                    update_post_meta( $new_id, self::INCOMPLETE_META, '1' );
                 }
 
                 $meta = self::remap_refs(
@@ -1061,19 +1482,14 @@ class DD_Backup {
                 self::ensure_public_token( $new_id, $prepared['post']['post_type'] );
 
                 $report['terms'] += self::restore_terms( $new_id, $prepared['terms'] );
+
+                // 여기까지 왔으면 이 포스트는 온전하다 — 표식을 지운다.
+                delete_post_meta( $new_id, self::INCOMPLETE_META );
             } catch ( Exception $e ) {
-                // 이 포스트만 되돌린다. 나머지 복원은 계속 진행한다.
-                if ( in_array( $new_id, $created, true ) ) {
-                    wp_delete_post( $new_id, true );
-                    --$report['created'];
-                    $type = $prepared['post']['post_type'];
-                    if ( isset( $report['by_type'][ $type ] ) ) {
-                        --$report['by_type'][ $type ];
-                    }
-                }
-                ++$report['failed'];
-                $report['errors'][] = self::describe_entry( $item['entry'], $item['index'] )
-                    . ' — 상세 데이터 복원 실패(해당 항목만 취소): ' . $e->getMessage();
+                self::rollback_entry( $new_id, $item, $created, $report, $e->getMessage() );
+            } catch ( Error $e ) {
+                // Exception 을 상속하지 않는 PHP 7+ 오류(TypeError 등)도 항목 단위로 격리한다.
+                self::rollback_entry( $new_id, $item, $created, $report, $e->getMessage() );
             }
         }
 
@@ -1180,10 +1596,16 @@ class DD_Backup {
         return sanitize_text_field( (string) $value );
     }
 
-    /** uid 로 기존 콘텐츠를 찾는다 (중복 복원 방지). */
-    private static function find_by_uid( $uid ) {
+    /**
+     * uid 로 기존 콘텐츠를 찾고, 그 복원이 끝난 상태인지도 함께 알려준다.
+     *
+     * @return array array{id:int, incomplete:bool}
+     */
+    private static function find_existing( $uid ) {
+        $none = array( 'id' => 0, 'incomplete' => false );
+
         if ( $uid === '' ) {
-            return 0;
+            return $none;
         }
 
         $found = get_posts( array(
@@ -1196,7 +1618,38 @@ class DD_Backup {
             'suppress_filters' => false,
         ) );
 
-        return empty( $found ) ? 0 : (int) $found[0];
+        if ( empty( $found ) ) {
+            return $none;
+        }
+
+        $id = (int) $found[0];
+
+        return array(
+            'id'         => $id,
+            'incomplete' => (bool) get_post_meta( $id, self::INCOMPLETE_META, true ),
+        );
+    }
+
+    /**
+     * 2단계에서 실패한 항목 하나만 되돌린다. 나머지 복원은 계속 진행한다.
+     *
+     * 새로 만든 포스트는 지우고, 기존 포스트를 손대던 중이었다면
+     * **미완료 표식을 남겨** 다음 복원이 이어받게 한다.
+     */
+    private static function rollback_entry( $new_id, $item, $created, &$report, $message ) {
+        $type = $item['prepared']['post']['post_type'];
+
+        if ( in_array( $new_id, $created, true ) ) {
+            wp_delete_post( $new_id, true );
+            --$report['created'];
+            if ( isset( $report['by_type'][ $type ] ) ) {
+                --$report['by_type'][ $type ];
+            }
+        }
+
+        ++$report['failed'];
+        $report['errors'][] = self::describe_entry( $item['entry'], $item['index'] )
+            . ' — 상세 데이터 복원 실패(해당 항목만 취소): ' . $message;
     }
 
     /** 덮어쓰기 모드에서 이 플러그인의 메타만 지운다. */
@@ -1297,14 +1750,16 @@ class DD_Backup {
             return $dir;
         }
 
-        $json = wp_json_encode( self::export(), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT );
-        if ( $json === false ) {
-            return new WP_Error( 'dd_backup_encode_failed', '백업 데이터를 만들지 못했습니다.' );
+        $json = self::encode( self::export() );
+        if ( is_wp_error( $json ) ) {
+            return $json;
         }
 
         // 파일명에 무작위 접미사 — uploads 는 웹에서 접근 가능하므로 경로를 추측하기 어렵게 한다.
+        // 무작위 접미사를 길게 잡는다 — nginx·IIS 는 .htaccess 를 무시하므로,
+        // 이 폴더에서는 "추측 불가능한 파일명"이 사실상 유일한 방어선이 된다.
         $file = 'dingdong-lms-autobackup-' . gmdate( 'Y-m-d-H-i-s', current_time( 'timestamp' ) )
-            . '-' . wp_generate_password( 12, false, false ) . '.json';
+            . '-' . wp_generate_password( 32, false, false ) . '.json';
 
         $path = trailingslashit( $dir ) . $file;
 
@@ -1347,7 +1802,39 @@ class DD_Backup {
             file_put_contents( $index, "<?php\n// Silence is golden.\n" ); // phpcs:ignore
         }
 
+        // IIS 용 — .htaccess 를 읽지 않는 서버를 위한 추가 차단.
+        $webconfig = trailingslashit( $dir ) . 'web.config';
+        if ( ! file_exists( $webconfig ) ) {
+            file_put_contents( // phpcs:ignore
+                $webconfig,
+                "<configuration><system.webServer><authorization>\n"
+                . "  <deny users=\"*\" />\n"
+                . "</authorization></system.webServer></configuration>\n"
+            );
+        }
+
         return $dir;
+    }
+
+    /**
+     * 다운로드가 끊겨 남은 임시 ZIP 을 정리한다.
+     *
+     * 이 파일에는 사이트 콘텐츠 전체가 들어 있으므로 uploads 아래에 방치하면
+     * 정보 유출이 된다. 진행 중인 다운로드를 지우지 않도록 1시간 유예를 둔다.
+     */
+    private static function sweep_stale_archives( $dir ) {
+        $files = glob( trailingslashit( $dir ) . 'tmp-*.zip' );
+        if ( ! is_array( $files ) ) {
+            return;
+        }
+
+        $cutoff = time() - HOUR_IN_SECONDS;
+
+        foreach ( $files as $file ) {
+            if ( @filemtime( $file ) < $cutoff ) { // phpcs:ignore
+                @unlink( $file ); // phpcs:ignore
+            }
+        }
     }
 
     /** 오래된 자동 백업을 정리한다 — 서버에 파일이 무한히 쌓이지 않게. */
@@ -1395,6 +1882,35 @@ class DD_Backup {
             $out[ $type ] = count( $found );
         }
         return $out;
+    }
+
+    /**
+     * 휴지통에 있어 백업되지 않는 콘텐츠 수.
+     *
+     * `post_status => 'any'` 는 휴지통을 제외한다. 조용히 빠지면 "전체 백업"이라는
+     * 이름과 어긋나므로, 몇 건이 빠지는지 관리자에게 알려 준다.
+     */
+    public static function trashed_count() {
+        $found = get_posts( array(
+            'post_type'   => self::POST_TYPES,
+            'post_status' => 'trash',
+            'numberposts' => -1,
+            'fields'      => 'ids',
+        ) );
+        return count( $found );
+    }
+
+    /**
+     * 자동 안전 백업 폴더가 웹에서 접근 가능한 상태인지 진단한다.
+     *
+     * @return array array{protected:bool, server:string}
+     */
+    public static function backup_dir_protection() {
+        $server = isset( $_SERVER['SERVER_SOFTWARE'] ) ? (string) $_SERVER['SERVER_SOFTWARE'] : '';
+        return array(
+            'protected' => self::htaccess_effective( $server ),
+            'server'    => $server,
+        );
     }
 }
 

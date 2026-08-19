@@ -203,6 +203,8 @@ if ( ! defined( 'ABSPATH' ) ) {
                 </a>
             </div>
 
+            <div id="dd-backup-warnings" class="dd-mt-2 dd-hidden"></div>
+
             <p class="dd-help-text dd-mt-2" id="dd-backup-archive-note">
                 <?php echo esc_html( 'JSON 백업은 콘텐츠와 설정만 담아 가볍고, 다른 사이트로 옮기기 쉽습니다. ZIP 백업은 여기에 이미지 파일까지 함께 담습니다.' ); ?>
             </p>

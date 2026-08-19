@@ -220,6 +220,18 @@ Claude Code의 `preview_start` / `__*_preview.html` 같은 별도 dev server는 
   포스트마다 영구 UID(`_dd_backup_uid`)를 부여해 두고, 복원 시 uid → 새 ID 로 다시 잇는다.
   **참조 메타를 새로 추가하면 `REF_META_KEYS` 에도 넣어야 한다.** 안 넣으면 복원 후 남의 포스트를 가리킨다.
 - 복원 기본 동작은 `skip` — 같은 uid 가 이미 있으면 건너뛴다. 어떤 모드에서도 백업에 없는 기존 콘텐츠는 삭제하지 않는다.
+- ⚠️ **중단된 복원은 반드시 이어받아야 한다.** 복원은 ①포스트 생성 → ②메타 기록 2단계라,
+  그 사이 타임아웃이면 껍데기만 남는다. ①에서 `_dd_backup_incomplete` 표식을 세우고 ②가 끝나야 지운다.
+  표식이 남은 포스트는 `decide_action()` 이 `resume` 으로 판정해 건너뛰지 않는다.
+  **이 표식을 없애거나 uid 를 ② 이전에 "완료"로 취급하면, 한 번 끊긴 콘텐츠가 영구히 복구 불가가 된다.**
+- ⚠️ 항목별 오류 격리는 `catch (Exception)` **과 `catch (Error)` 둘 다** 필요하다. PHP 7+ 의 TypeError 는
+  Exception 을 상속하지 않아, 하나만 잡으면 항목 하나의 오류가 요청 전체를 죽여 부분 복원을 만든다.
+- ⚠️ **`/backup/export` 는 POST 다.** 백업 생성은 포스트에 영구 UID 를 부여하는 쓰기 작업이라 GET 이면 안 된다.
+- 압축 폭탄 방어: 항목 수·장당 크기·총 해제량·압축비 상한(`MAX_ARCHIVE_ENTRIES` 등)을 **풀기 전에** 검사하고,
+  `getFromIndex()` 로 통째로 읽지 말고 `extract_entry()` 로 청크 복사한다.
+- 백업 JSON 은 `DD_Backup::encode()` 로 만든다 — UTF-8 세척은 `iconv` 가 아니라 **바이트 단위 결정적 복구**다
+  (`iconv` 는 CLI 와 PHP-WASM 에서 결과가 달라 한글이 통째로 날아간다).
+- 휴지통 콘텐츠는 백업 대상이 아니다(`post_status => 'any'` 가 제외). 설정 화면이 그 건수를 표시하니 지우지 말 것.
 - 백업 파일은 서버에 남기지 않는다 (JSON 은 REST 응답 본문 → 브라우저 Blob 저장, ZIP 은 전송 직후 `unlink`).
   복원 전 자동 안전 백업만 `uploads/dingdong-lms/backups/` 에 무작위 접미사 파일명으로 저장하고 최근 5개만 유지한다.
 

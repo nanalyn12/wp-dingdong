@@ -223,8 +223,10 @@ class DD_Rest_API {
             'permission_callback' => $admin,
         ) );
 
+        // ⚠️ GET 이 아니라 POST 다. 백업 생성은 포스트에 영구 UID 를 부여하는
+        //    **쓰기 작업**이므로, 부수효과 없는 GET 으로 두면 안 된다.
         register_rest_route( $ns, '/backup/export', array(
-            'methods'             => 'GET',
+            'methods'             => 'POST',
             'callback'            => array( __CLASS__, 'backup_export' ),
             'permission_callback' => $admin,
         ) );
@@ -1450,6 +1452,10 @@ class DD_Rest_API {
                 'bytes' => wp_max_upload_size(),
                 'human' => size_format( wp_max_upload_size() ),
             ),
+            // 휴지통 콘텐츠는 백업에 담기지 않는다 — 조용히 빠지지 않도록 알린다.
+            'trashed'        => DD_Backup::trashed_count(),
+            // 자동 안전 백업 폴더가 웹에서 열리는 서버인지 (nginx·IIS 는 .htaccess 무시)
+            'backup_dir'     => DD_Backup::backup_dir_protection(),
         ) );
     }
 
@@ -1498,33 +1504,14 @@ class DD_Rest_API {
         if ( ! empty( $files['file'] ) && is_array( $files['file'] ) ) {
             $file = $files['file'];
 
-            if ( ! empty( $file['error'] ) ) {
-                return new WP_Error(
-                    'dd_backup_upload_error',
-                    '파일 업로드에 실패했습니다 (오류 코드 ' . (int) $file['error'] . ').',
-                    array( 'status' => 400 )
-                );
+            // 업로드 필드 검증은 DD_Backup 이 담당한다 (배열 주입·확장자·크기).
+            $checked = DD_Backup::inspect_upload( $file );
+            if ( is_wp_error( $checked ) ) {
+                return $checked;
             }
+            $ext = $checked['ext'];
 
-            $ext = strtolower( pathinfo( (string) $file['name'], PATHINFO_EXTENSION ) );
-            if ( ! in_array( $ext, array( 'json', 'zip' ), true ) ) {
-                return new WP_Error(
-                    'dd_backup_bad_extension',
-                    '.json 또는 .zip 백업 파일만 업로드할 수 있습니다.',
-                    array( 'status' => 400 )
-                );
-            }
-
-            // JSON 은 통째로 메모리에 올리므로 상한을 두고, ZIP 은 디스크에서 읽으므로 서버 업로드 한도를 따른다.
-            if ( $ext === 'json' && (int) $file['size'] > DD_Backup::MAX_BYTES ) {
-                return new WP_Error(
-                    'dd_backup_too_large',
-                    '백업 파일이 너무 큽니다 (최대 ' . size_format( DD_Backup::MAX_BYTES ) . ').',
-                    array( 'status' => 413 )
-                );
-            }
-
-            if ( empty( $file['tmp_name'] ) || ! is_uploaded_file( $file['tmp_name'] ) ) {
+            if ( ! is_uploaded_file( $file['tmp_name'] ) ) {
                 return new WP_Error(
                     'dd_backup_upload_error',
                     '업로드된 파일을 읽을 수 없습니다.',
