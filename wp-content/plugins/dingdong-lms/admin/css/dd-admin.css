@@ -1295,6 +1295,23 @@
     gap: 0.5rem;
 }
 
+/* 진단 로그 뷰어 — 서버 접속 없이 화면에서 원인을 확인한다 */
+.dd-log-view {
+    margin-top: 0.5rem;
+    padding: 0.85rem 1rem;
+    max-height: 320px;
+    overflow: auto;
+    background: var(--dd-bg);
+    border: 1px solid var(--dd-border);
+    border-radius: var(--dd-radius-sm);
+    font-family: Consolas, Monaco, "Courier New", monospace;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: var(--dd-text);
+}
+
 /* 백업/복원 알림은 여러 줄 안내를 담으므로 줄바꿈을 살린다 */
 #dd-backup-alert .dd-alert,
 #dd-restore-alert .dd-alert {

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Dingdong LMS
  * Description: 한국인을 위한 AI 기반 중국어·중국문화 교육 플랫폼
- * Version: 2.5.2
+ * Version: 2.5.3
  * Author: Dingdong
  * Text Domain: dingdong-lms
  */
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // 플러그인 헤더의 Version 과 반드시 동일하게 유지할 것.
 // (헤더는 WordPress 가 표시·업데이트 판단에, 이 상수는 에셋 캐시버스팅에 쓴다)
-define( 'DD_LMS_VERSION', '2.5.2' );
+define( 'DD_LMS_VERSION', '2.5.3' );
 define( 'DD_LMS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'DD_LMS_URL', plugin_dir_url( __FILE__ ) );
 

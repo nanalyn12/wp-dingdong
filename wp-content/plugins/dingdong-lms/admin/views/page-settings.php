@@ -271,6 +271,32 @@ if ( ! defined( 'ABSPATH' ) ) {
         </div>
     </div>
 
+    <!-- 진단 -->
+    <div class="dd-card dd-mt-2">
+        <div class="dd-card-header">
+            <h2><?php echo esc_html( '문제 진단' ); ?></h2>
+        </div>
+        <div class="dd-card-body">
+            <p class="dd-mb-2">
+                <?php echo esc_html( '백업이나 복원이 실패했을 때, 서버에 접속하지 않고 여기서 원인을 확인할 수 있습니다.' ); ?>
+            </p>
+
+            <div class="dd-flex dd-gap-1">
+                <button type="button" class="dd-btn dd-btn-secondary" id="dd-btn-diagnostics">
+                    <?php echo esc_html( '진단 정보 보기' ); ?>
+                </button>
+                <button type="button" class="dd-btn dd-btn-outline" id="dd-btn-diagnostics-copy">
+                    <?php echo esc_html( '복사하기' ); ?>
+                </button>
+                <button type="button" class="dd-btn dd-btn-danger" id="dd-btn-diagnostics-clear">
+                    <?php echo esc_html( '기록 지우기' ); ?>
+                </button>
+            </div>
+
+            <div id="dd-diagnostics-result" class="dd-mt-2 dd-hidden"></div>
+        </div>
+    </div>
+
     <!-- 플러그인 삭제 시 데이터 처리 -->
     <div class="dd-card dd-mt-2">
         <div class="dd-card-header">

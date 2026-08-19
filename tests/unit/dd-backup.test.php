@@ -587,3 +587,40 @@ test( '이상한 값이 들어와도 안전한 기본값을 쓴다', function ()
     assert_true( DD_Backup::time_budget( -10 ) > 0 );
     assert_true( DD_Backup::time_budget( 'abc' ) > 0 );
 } );
+
+/* =============================================================
+   16) 진단 로그 보기 — 관리자 화면에서 원인을 확인한다
+   ============================================================= */
+
+test( '로그 꼬리를 원하는 줄 수만큼 잘라 온다', function () {
+    $text = "1번줄\n2번줄\n3번줄\n4번줄\n5번줄\n";
+    assert_same( "4번줄\n5번줄", DD_Backup::tail_lines( $text, 2 ) );
+} );
+
+test( '요청한 줄 수보다 짧으면 전부 돌려준다', function () {
+    assert_same( "가\n나", DD_Backup::tail_lines( "가\n나", 10 ) );
+} );
+
+test( '빈 로그는 빈 문자열', function () {
+    assert_same( '', DD_Backup::tail_lines( '', 10 ) );
+    assert_same( '', DD_Backup::tail_lines( "\n\n", 10 ) );
+} );
+
+test( '줄 끝 공백과 빈 줄을 정리한다', function () {
+    assert_same( "가\n나", DD_Backup::tail_lines( "가\n\n나\n\n", 10 ) );
+} );
+
+test( '★ 진단 정보에는 자격증명이 섞이지 않는다', function () {
+    // 로그에 실수로 키가 남았더라도 화면에 그대로 뿌리지 않는다.
+    $dirty = "[BACKUP] 복원 시작\n[BACKUP] key=AIzaSyD-1234567890abcdefghijklmnopqrstuv\n[BACKUP] 완료";
+    $clean = DD_Backup::redact( $dirty );
+
+    assert_not_contains( 'AIzaSyD-1234567890abcdefghijklmnopqrstuv', $clean );
+    assert_contains( '복원 시작', $clean );
+    assert_contains( '완료', $clean );
+} );
+
+test( '일반 문장은 그대로 둔다', function () {
+    $text  = '[BACKUP] 복원 완료 — 생성 4 / 건너뜀 40';
+    assert_same( $text, DD_Backup::redact( $text ) );
+} );

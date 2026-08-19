@@ -1168,6 +1168,91 @@
 
             const btnRestore = document.getElementById('dd-btn-restore');
             if (btnRestore) btnRestore.addEventListener('click', restoreBackup);
+
+            const btnDiag = document.getElementById('dd-btn-diagnostics');
+            if (btnDiag) btnDiag.addEventListener('click', () => showDiagnostics(true));
+
+            const btnCopy = document.getElementById('dd-btn-diagnostics-copy');
+            if (btnCopy) btnCopy.addEventListener('click', copyDiagnostics);
+
+            const btnClear = document.getElementById('dd-btn-diagnostics-clear');
+            if (btnClear) btnClear.addEventListener('click', clearDiagnostics);
+        }
+
+        let lastDiagnosticsText = '';
+
+        /**
+         * 진단 정보를 화면에 보여 준다.
+         * 서버에 FTP 로 붙지 않고도 실패 원인을 확인할 수 있어야 한다.
+         */
+        async function showDiagnostics(scroll) {
+            const box = document.getElementById('dd-diagnostics-result');
+            if (!box) return;
+
+            box.classList.remove('dd-hidden');
+            box.innerHTML = '<div class="dd-info-box">불러오는 중...</div>';
+
+            try {
+                const d = await apiFetch({ path: API_BASE + '/backup/diagnostics' });
+
+                const lines = [
+                    '플러그인 ' + d.plugin_version + ' / PHP ' + d.php_version + ' / WordPress ' + d.wp_version,
+                    'PHP 실행 시간 제한: ' + d.limits.max_execution_time + '초 (한 번에 ' + d.limits.time_budget + '초씩 나눠 처리)',
+                    'PHP 메모리: ' + d.limits.memory_limit + ' / 업로드 최대: ' + d.limits.upload_max,
+                    'ZIP 지원: ' + (d.zip_available ? '있음' : '없음') + ' / 로그 기록 가능: ' + (d.log_writable ? '예' : '아니오')
+                ];
+
+                let html = '<div class="dd-info-box"><strong>환경</strong><br>'
+                    + lines.map(escapeHtml).join('<br>') + '</div>';
+
+                if (d.last_fatal) {
+                    html += '<div class="dd-alert dd-alert-error dd-mt-2" style="display:block;white-space:pre-line">'
+                        + '⚠️ 마지막 치명적 오류 (' + escapeHtml(d.last_fatal.time) + ')\n'
+                        + escapeHtml(d.last_fatal.message) + '\n\n'
+                        + '기술 정보: ' + escapeHtml(d.last_fatal.raw)
+                        + '</div>';
+                } else {
+                    html += '<div class="dd-alert dd-alert-success dd-mt-2">기록된 치명적 오류가 없습니다.</div>';
+                }
+
+                html += '<div class="dd-mt-2"><strong>최근 기록</strong>'
+                    + '<pre class="dd-log-view">' + escapeHtml(d.log || '(기록 없음)') + '</pre></div>';
+
+                box.innerHTML = html;
+
+                lastDiagnosticsText = lines.join('\n')
+                    + (d.last_fatal ? '\n\n[치명적 오류] ' + d.last_fatal.time + '\n' + d.last_fatal.raw : '')
+                    + '\n\n[최근 기록]\n' + (d.log || '(없음)');
+
+                if (scroll) box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } catch (err) {
+                box.innerHTML = '<div class="dd-alert dd-alert-error">진단 정보를 불러오지 못했습니다: '
+                    + escapeHtml(describeError(err)) + '</div>';
+            }
+        }
+
+        /** 진단 내용을 클립보드로 — 그대로 붙여넣어 도움을 요청할 수 있게. */
+        async function copyDiagnostics() {
+            if (!lastDiagnosticsText) await showDiagnostics(false);
+            if (!lastDiagnosticsText) return;
+
+            try {
+                await navigator.clipboard.writeText(lastDiagnosticsText);
+                showBackupAlert('dd-diagnostics-result', 'success', '진단 내용을 복사했습니다. 그대로 붙여넣어 문의하시면 됩니다.');
+                showDiagnostics(false);
+            } catch (e) {
+                showBackupAlert('dd-diagnostics-result', 'error', '복사에 실패했습니다. 화면의 내용을 직접 선택해 복사해 주세요.');
+            }
+        }
+
+        async function clearDiagnostics() {
+            if (!confirm('기록된 오류와 로그를 지웁니다. 계속하시겠습니까?')) return;
+            try {
+                await apiFetch({ path: API_BASE + '/backup/diagnostics', method: 'DELETE' });
+                showDiagnostics(false);
+            } catch (err) {
+                showBackupAlert('dd-diagnostics-result', 'error', '지우지 못했습니다: ' + describeError(err));
+            }
         }
 
         /** 백업하면 몇 건이 담기는지 미리 보여 준다. */

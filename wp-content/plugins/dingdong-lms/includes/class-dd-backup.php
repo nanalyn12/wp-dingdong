@@ -575,6 +575,105 @@ class DD_Backup {
         file_put_contents( trailingslashit( $dir ) . 'debug.log', $line, FILE_APPEND ); // phpcs:ignore
     }
 
+    /** 마지막 치명적 오류를 담는 옵션. 파일 로그가 실패해도 이건 남는다. */
+    const LAST_FATAL_OPTION = 'dd_lms_last_fatal';
+
+    /** 진단 화면에 보여 줄 로그 줄 수. */
+    const LOG_TAIL_LINES = 200;
+
+    /** 텍스트의 마지막 $count 줄만 돌려준다 (빈 줄 정리). */
+    public static function tail_lines( $text, $count ) {
+        if ( ! is_string( $text ) || trim( $text ) === '' ) {
+            return '';
+        }
+
+        $lines = preg_split( '/\r\n|\r|\n/', $text );
+        $lines = array_values( array_filter( array_map( 'rtrim', $lines ), function ( $l ) {
+            return $l !== '';
+        } ) );
+
+        if ( count( $lines ) > $count ) {
+            $lines = array_slice( $lines, -$count );
+        }
+
+        return implode( "\n", $lines );
+    }
+
+    /**
+     * 진단 출력에서 자격증명처럼 보이는 값을 가린다.
+     *
+     * 로그를 관리자 화면에 그대로 뿌리는 기능이므로, 어딘가에서 키가 흘러들어와
+     * 있어도 화면·스크린샷으로 재유출되지 않게 한 겹 더 막는다.
+     */
+    public static function redact( $text ) {
+        if ( ! is_string( $text ) || $text === '' ) {
+            return '';
+        }
+
+        $patterns = array(
+            '/\bAIza[0-9A-Za-z_\-]{20,}/',       // Google API 키
+            '/\bsk-[A-Za-z0-9]{20,}/',           // OpenAI 계열
+            '/\bghp_[A-Za-z0-9]{20,}/',          // GitHub 토큰
+            '/\bAKIA[0-9A-Z]{16}\b/',            // AWS
+        );
+
+        return preg_replace( $patterns, '[가려짐]', $text );
+    }
+
+    /** 마지막 치명적 오류를 옵션에 기록한다 (파일 쓰기가 막혀도 남도록). */
+    private static function record_fatal( $explained, $context ) {
+        update_option( self::LAST_FATAL_OPTION, array(
+            'time'    => gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) ),
+            'context' => (string) $context,
+            'reason'  => $explained['reason'],
+            'message' => $explained['message'],
+            'raw'     => self::redact( $explained['raw'] ),
+            'php'     => PHP_VERSION,
+            'version' => defined( 'DD_LMS_VERSION' ) ? DD_LMS_VERSION : '',
+        ), false );
+    }
+
+    /** 진단 화면에 줄 정보 묶음. */
+    public static function diagnostics() {
+        $uploads = wp_upload_dir();
+        $logfile = empty( $uploads['error'] )
+            ? trailingslashit( $uploads['basedir'] ) . 'dingdong-lms/debug.log'
+            : '';
+
+        $log = ( $logfile && is_readable( $logfile ) ) ? file_get_contents( $logfile ) : ''; // phpcs:ignore
+
+        return array(
+            'plugin_version' => defined( 'DD_LMS_VERSION' ) ? DD_LMS_VERSION : '',
+            'php_version'    => PHP_VERSION,
+            'wp_version'     => get_bloginfo( 'version' ),
+            'limits'         => array(
+                'max_execution_time' => ini_get( 'max_execution_time' ),
+                'memory_limit'       => ini_get( 'memory_limit' ),
+                'upload_max'         => size_format( wp_max_upload_size() ),
+                'time_budget'        => self::time_budget( ini_get( 'max_execution_time' ) ),
+            ),
+            'zip_available'  => class_exists( 'ZipArchive' ),
+            'log_writable'   => $logfile !== '' && ( is_writable( dirname( $logfile ) ) || is_writable( $logfile ) ),
+            'last_fatal'     => get_option( self::LAST_FATAL_OPTION, null ),
+            'log'            => self::redact( self::tail_lines( $log, self::LOG_TAIL_LINES ) ),
+        );
+    }
+
+    /** 진단 기록을 비운다. */
+    public static function clear_diagnostics() {
+        delete_option( self::LAST_FATAL_OPTION );
+
+        $uploads = wp_upload_dir();
+        if ( empty( $uploads['error'] ) ) {
+            $logfile = trailingslashit( $uploads['basedir'] ) . 'dingdong-lms/debug.log';
+            if ( file_exists( $logfile ) ) {
+                file_put_contents( $logfile, '' ); // phpcs:ignore
+            }
+        }
+
+        return true;
+    }
+
     /**
      * PHP 치명적 오류를 사람이 읽을 수 있는 안내로 바꾼다.
      *
@@ -636,7 +735,10 @@ class DD_Backup {
             if ( $explained === false ) {
                 return;
             }
+            // 파일 로그와 옵션 양쪽에 남긴다. 업로드 폴더에 쓰지 못하는 서버에서도
+            // 관리자 화면에서 원인을 볼 수 있어야 한다 (FTP 없이).
             self::log( '치명적 오류(' . $explained['reason'] . ') during ' . $context . ' — ' . $explained['raw'] );
+            self::record_fatal( $explained, $context );
         } );
     }
 

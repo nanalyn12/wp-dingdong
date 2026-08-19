@@ -237,6 +237,12 @@ class DD_Rest_API {
             'permission_callback' => $admin,
         ) );
 
+        // 진단 — FTP 없이 관리자 화면에서 오류 원인을 볼 수 있게 한다.
+        register_rest_route( $ns, '/backup/diagnostics', array(
+            array( 'methods' => 'GET',  'callback' => array( __CLASS__, 'backup_diagnostics' ), 'permission_callback' => $admin ),
+            array( 'methods' => 'DELETE', 'callback' => array( __CLASS__, 'backup_diagnostics_clear' ), 'permission_callback' => $admin ),
+        ) );
+
         // 공개 API (인증 불필요)
         register_rest_route( $ns, '/public/newsletters', array(
             'methods'             => 'GET',
@@ -1457,6 +1463,16 @@ class DD_Rest_API {
             // 자동 안전 백업 폴더가 웹에서 열리는 서버인지 (nginx·IIS 는 .htaccess 무시)
             'backup_dir'     => DD_Backup::backup_dir_protection(),
         ) );
+    }
+
+    /** 진단 정보 (플러그인/PHP 버전, 서버 제한, 마지막 치명적 오류, 최근 로그). */
+    public static function backup_diagnostics() {
+        return rest_ensure_response( DD_Backup::diagnostics() );
+    }
+
+    public static function backup_diagnostics_clear() {
+        DD_Backup::clear_diagnostics();
+        return rest_ensure_response( array( 'cleared' => true ) );
     }
 
     /**

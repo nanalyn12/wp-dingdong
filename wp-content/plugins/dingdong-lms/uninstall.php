@@ -70,6 +70,7 @@ delete_option( 'dd_lms_pixabay_key' );
 delete_option( 'dd_lms_version' );
 delete_option( 'dd_lms_rewrite_version' );
 delete_option( 'dd_gemini_last_call' );
+delete_option( 'dd_lms_last_fatal' );
 delete_option( 'dd_lms_purge_content_on_uninstall' );
 
 // 제거된 AI 학습송(SUNO) 기능이 남긴 옵션 — 구버전에서 업그레이드한 사이트 정리용
