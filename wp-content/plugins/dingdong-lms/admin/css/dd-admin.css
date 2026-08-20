@@ -1295,6 +1295,14 @@
     gap: 0.5rem;
 }
 
+/* 이미지 묶음 나눠 받기 버튼 목록 */
+.dd-media-parts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+}
+
 /* 진단 로그 뷰어 — 서버 접속 없이 화면에서 원인을 확인한다 */
 .dd-log-view {
     margin-top: 0.5rem;

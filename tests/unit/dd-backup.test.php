@@ -624,3 +624,73 @@ test( '일반 문장은 그대로 둔다', function () {
     $text  = '[BACKUP] 복원 완료 — 생성 4 / 건너뜀 40';
     assert_same( $text, DD_Backup::redact( $text ) );
 } );
+
+/* =============================================================
+   17) 이미지 묶음 나눠 받기 — FTP 없이 이미지를 옮긴다
+   ============================================================= */
+
+test( '조각 크기 안에서 파일을 순서대로 묶는다', function () {
+    $files = array(
+        array( 'path' => 'a.png', 'bytes' => 4 ),
+        array( 'path' => 'b.png', 'bytes' => 4 ),
+        array( 'path' => 'c.png', 'bytes' => 4 ),
+    );
+    $parts = DD_Backup::pack_into_parts( $files, 10 );
+
+    assert_same( 2, count( $parts ) );
+    assert_same( array( 'a.png', 'b.png' ), $parts[0]['files'] );
+    assert_same( array( 'c.png' ), $parts[1]['files'] );
+    assert_same( 8, $parts[0]['bytes'] );
+} );
+
+test( '★ 조각 크기보다 큰 파일도 버리지 않고 혼자 한 묶음이 된다', function () {
+    // 이미지 1장이 상한보다 크다고 백업에서 빠지면 안 된다.
+    $files = array(
+        array( 'path' => 'small.png', 'bytes' => 2 ),
+        array( 'path' => 'huge.png',  'bytes' => 50 ),
+        array( 'path' => 'tail.png',  'bytes' => 2 ),
+    );
+    $parts = DD_Backup::pack_into_parts( $files, 10 );
+
+    $all = array();
+    foreach ( $parts as $p ) { $all = array_merge( $all, $p['files'] ); }
+    assert_same( array( 'small.png', 'huge.png', 'tail.png' ), $all, '어떤 파일도 빠지면 안 됨' );
+    assert_true( in_array( 'huge.png', $parts[1]['files'], true ) );
+    assert_same( 1, count( $parts[1]['files'] ), '큰 파일은 혼자 담긴다' );
+} );
+
+test( '파일이 없으면 묶음도 없다', function () {
+    assert_same( array(), DD_Backup::pack_into_parts( array(), 10 ) );
+} );
+
+test( '조각 크기가 이상하면 안전한 최소값을 쓴다', function () {
+    $files = array( array( 'path' => 'a.png', 'bytes' => 1 ) );
+    assert_same( 1, count( DD_Backup::pack_into_parts( $files, 0 ) ) );
+    assert_same( 1, count( DD_Backup::pack_into_parts( $files, -5 ) ) );
+} );
+
+test( '★ 이미지 묶음도 정상 백업 파일로 인정받는다', function () {
+    // 묶음 ZIP 안의 backup.json 은 콘텐츠가 비어 있지만 검증은 통과해야 한다.
+    // (통과하지 못하면 복원 화면이 "백업 파일이 아니다"라며 거부한다)
+    $doc = DD_Backup::media_part_document( 3, 19 );
+
+    assert_same( true, DD_Backup::validate( $doc ) );
+    assert_same( array(), $doc['posts'] );
+    assert_same( 3, $doc['media_part']['index'] );
+    assert_same( 19, $doc['media_part']['total'] );
+} );
+
+test( '★ 플러그인 버전이 "0" 이어도 정상 백업으로 인정한다 (empty 함정)', function () {
+    // PHP 의 empty('0') 은 true 다. 이걸 그대로 쓰면 멀쩡한 백업이 거부된다.
+    $data                   = dd_backup_fixture();
+    $data['plugin_version'] = '0';
+    assert_same( true, DD_Backup::validate( $data ) );
+} );
+
+test( '생성 정보가 정말로 비어 있으면 거부한다', function () {
+    $data                   = dd_backup_fixture();
+    $data['plugin_version'] = '';
+    $res                    = DD_Backup::validate( $data );
+    assert_true( is_wp_error( $res ) );
+    assert_same( 'dd_backup_malformed', $res->get_error_code() );
+} );

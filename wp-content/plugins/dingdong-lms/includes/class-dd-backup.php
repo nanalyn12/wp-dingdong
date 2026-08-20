@@ -944,12 +944,16 @@ class DD_Backup {
             }
         }
 
-        if ( empty( $data['generated_at'] ) || empty( $data['plugin_version'] ) ) {
-            return new WP_Error(
-                'dd_backup_malformed',
-                '백업 파일에 생성 정보(generated_at / plugin_version)가 없습니다.',
-                array( 'status' => 400 )
-            );
+        // ⚠️ empty() 를 쓰면 안 된다. PHP 에서 empty('0') 은 true 라, 버전이 "0" 인
+        //    정상 백업을 "생성 정보 없음"으로 거부해 버린다.
+        foreach ( array( 'generated_at', 'plugin_version' ) as $field ) {
+            if ( ! isset( $data[ $field ] ) || ! is_scalar( $data[ $field ] ) || (string) $data[ $field ] === '' ) {
+                return new WP_Error(
+                    'dd_backup_malformed',
+                    '백업 파일에 생성 정보(' . $field . ')가 없습니다.',
+                    array( 'status' => 400 )
+                );
+            }
         }
 
         if ( count( $data['posts'] ) > self::MAX_POSTS ) {
@@ -1444,6 +1448,194 @@ class DD_Backup {
         $zip->close();
 
         return array( 'data' => $data, 'media' => $media );
+    }
+
+    /* =========================================================
+       이미지 묶음 나눠 받기 — FTP 없이 이미지를 옮기기 위한 경로
+       ========================================================= */
+
+    /** 나눠 받기 조각 크기의 최소값 (1MB). */
+    const MIN_PART_BYTES = 1048576;
+
+    /**
+     * 파일 목록을 조각 크기에 맞춰 순서대로 묶는다.
+     *
+     * ⚠️ 조각 크기보다 **큰 파일도 반드시 포함**시킨다. 상한을 넘는다고 건너뛰면
+     *    그 이미지는 어떤 묶음에도 담기지 않아 영영 옮겨지지 않는다. 그런 파일은
+     *    혼자 한 묶음이 된다.
+     *
+     * @param array $files array{path:string, bytes:int} 목록
+     * @param int   $limit 조각 크기(바이트)
+     * @return array array{index:int, files:string[], bytes:int} 목록
+     */
+    public static function pack_into_parts( $files, $limit ) {
+        // 주어진 크기를 그대로 존중한다. "너무 작은 조각은 만들지 않는다"는 정책은
+        // 호출부(media_parts)가 정한다 — 순수 함수에 정책을 섞으면 검증이 어려워진다.
+        $limit = (int) $limit;
+        if ( $limit <= 0 ) {
+            $limit = self::MIN_PART_BYTES;
+        }
+
+        $parts   = array();
+        $current = array( 'files' => array(), 'bytes' => 0 );
+
+        foreach ( (array) $files as $file ) {
+            if ( ! is_array( $file ) || empty( $file['path'] ) ) {
+                continue;
+            }
+            $bytes = isset( $file['bytes'] ) ? (int) $file['bytes'] : 0;
+
+            // 현재 묶음에 더 넣으면 넘칠 때는 먼저 마감한다.
+            if ( ! empty( $current['files'] ) && ( $current['bytes'] + $bytes ) > $limit ) {
+                $parts[] = $current;
+                $current = array( 'files' => array(), 'bytes' => 0 );
+            }
+
+            $current['files'][] = $file['path'];
+            $current['bytes']  += $bytes;
+
+            // 혼자서도 상한을 넘는 파일이면 그 자리에서 마감한다.
+            if ( $current['bytes'] >= $limit ) {
+                $parts[] = $current;
+                $current = array( 'files' => array(), 'bytes' => 0 );
+            }
+        }
+
+        if ( ! empty( $current['files'] ) ) {
+            $parts[] = $current;
+        }
+
+        foreach ( $parts as $i => $part ) {
+            $parts[ $i ]['index'] = $i + 1;
+        }
+
+        return $parts;
+    }
+
+    /**
+     * 이미지 묶음 ZIP 안에 넣을 backup.json 문서.
+     *
+     * 콘텐츠는 비어 있지만 **정상 백업 파일로 검증을 통과해야** 한다.
+     * 그래야 복원 화면이 같은 경로로 받아 이미지만 풀어 넣는다.
+     */
+    public static function media_part_document( $index, $total ) {
+        $uploads = wp_upload_dir();
+
+        return array(
+            'format'         => self::FORMAT,
+            'format_version' => self::FORMAT_VERSION,
+            'plugin'         => 'dingdong-lms',
+            'plugin_version' => defined( 'DD_LMS_VERSION' ) ? DD_LMS_VERSION : '0',
+            'wp_version'     => function_exists( 'get_bloginfo' ) ? get_bloginfo( 'version' ) : '',
+            'generated_at'   => gmdate( 'c' ),
+            'site'           => array(
+                'home_url'    => function_exists( 'home_url' ) ? home_url() : '',
+                'uploads_url' => isset( $uploads['baseurl'] ) ? $uploads['baseurl'] : '',
+            ),
+            'options'        => array(),
+            'posts'          => array(),
+            'terms'          => array(),
+            'tables'         => array(),
+            'media_part'     => array( 'index' => (int) $index, 'total' => (int) $total ),
+            'notes'          => array(
+                '이미지 묶음 ' . (int) $index . '/' . (int) $total . ' 입니다. 콘텐츠는 들어 있지 않고 이미지 파일만 복원합니다.',
+            ),
+        );
+    }
+
+    /** 현재 이미지들을 조각 크기에 맞춰 나눈 목록. */
+    public static function media_parts( $part_bytes ) {
+        // 너무 잘게 쪼개면 조각 수가 폭발한다. 최소 크기는 여기서 강제한다.
+        $part_bytes = max( self::MIN_PART_BYTES, (int) $part_bytes );
+
+        $root  = trailingslashit( self::media_dir() );
+        $files = array();
+
+        foreach ( self::collect_media_files() as $relative ) {
+            $files[] = array( 'path' => $relative, 'bytes' => (int) @filesize( $root . $relative ) ); // phpcs:ignore
+        }
+
+        return self::pack_into_parts( $files, $part_bytes );
+    }
+
+    /**
+     * 이미지 묶음 하나를 ZIP 으로 만들어 스트리밍한다.
+     * admin-post 로 직접 이동해서 받는다 (전체 백업과 같은 이유).
+     */
+    public static function handle_media_part_download() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( '이 작업을 수행할 권한이 없습니다.', '권한 없음', array( 'response' => 403 ) );
+        }
+
+        check_admin_referer( 'dd_backup_archive' );
+
+        if ( ! class_exists( 'ZipArchive' ) ) {
+            wp_die( '이 서버에는 ZIP 확장이 없어 묶음을 만들 수 없습니다.', '백업 실패', array( 'response' => 500 ) );
+        }
+
+        @set_time_limit( 600 );
+
+        $part_bytes = absint( isset( $_GET['size'] ) ? $_GET['size'] : 0 );
+        $wanted     = absint( isset( $_GET['part'] ) ? $_GET['part'] : 1 );
+
+        $parts = self::media_parts( $part_bytes );
+        $total = count( $parts );
+
+        if ( $wanted < 1 || $wanted > $total ) {
+            wp_die( '없는 묶음 번호입니다.', '백업 실패', array( 'response' => 404 ) );
+        }
+
+        $part = $parts[ $wanted - 1 ];
+        $dir  = self::backup_dir();
+        if ( is_wp_error( $dir ) ) {
+            wp_die( esc_html( $dir->get_error_message() ), '백업 실패', array( 'response' => 500 ) );
+        }
+
+        $file = str_replace( '.zip', sprintf( '-images-%02d-of-%02d.zip', $wanted, $total ), self::archive_filename( current_time( 'timestamp' ) ) );
+        $path = trailingslashit( $dir ) . 'tmp-' . wp_generate_password( 12, false, false ) . '-' . $file;
+
+        $zip = new ZipArchive();
+        if ( $zip->open( $path, ZipArchive::CREATE | ZipArchive::OVERWRITE ) !== true ) {
+            wp_die( 'ZIP 파일을 만들지 못했습니다.', '백업 실패', array( 'response' => 500 ) );
+        }
+
+        $json = self::encode( self::media_part_document( $wanted, $total ) );
+        $zip->addFromString( self::ARCHIVE_ENTRY_JSON, is_wp_error( $json ) ? '{}' : $json );
+
+        $root = trailingslashit( self::media_dir() );
+        foreach ( $part['files'] as $relative ) {
+            if ( is_readable( $root . $relative ) ) {
+                $zip->addFile( $root . $relative, self::ARCHIVE_MEDIA_PREFIX . $relative );
+            }
+        }
+        $zip->close();
+
+        register_shutdown_function( function () use ( $path ) {
+            if ( file_exists( $path ) ) {
+                @unlink( $path ); // phpcs:ignore
+            }
+        } );
+        @ignore_user_abort( true ); // phpcs:ignore
+
+        if ( function_exists( 'apache_setenv' ) ) {
+            @apache_setenv( 'no-gzip', '1' ); // phpcs:ignore
+        }
+        @ini_set( 'zlib.output_compression', 'Off' ); // phpcs:ignore
+
+        while ( ob_get_level() > 0 ) {
+            ob_end_clean();
+        }
+
+        nocache_headers();
+        header( 'Content-Type: application/zip' );
+        header( 'Content-Disposition: attachment; filename="' . $file . '"' );
+        header( 'Content-Length: ' . filesize( $path ) );
+        header( 'Content-Transfer-Encoding: binary' );
+        header( 'X-Content-Type-Options: nosniff' );
+
+        readfile( $path );
+        @unlink( $path ); // phpcs:ignore
+        exit;
     }
 
     /**

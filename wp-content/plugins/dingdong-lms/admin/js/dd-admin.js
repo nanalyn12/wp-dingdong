@@ -1169,6 +1169,9 @@
             const btnRestore = document.getElementById('dd-btn-restore');
             if (btnRestore) btnRestore.addEventListener('click', restoreBackup);
 
+            const btnParts = document.getElementById('dd-btn-media-parts');
+            if (btnParts) btnParts.addEventListener('click', loadMediaParts);
+
             const btnDiag = document.getElementById('dd-btn-diagnostics');
             if (btnDiag) btnDiag.addEventListener('click', () => showDiagnostics(true));
 
@@ -1177,6 +1180,45 @@
 
             const btnClear = document.getElementById('dd-btn-diagnostics-clear');
             if (btnClear) btnClear.addEventListener('click', clearDiagnostics);
+        }
+
+        /**
+         * 이미지를 작은 묶음으로 나눈 목록을 보여 준다.
+         * 대용량 ZIP 업로드가 막히는 호스팅에서 FTP 없이 이미지를 옮기는 경로다.
+         */
+        async function loadMediaParts() {
+            const box = document.getElementById('dd-media-parts-list');
+            const sizeSel = document.getElementById('dd-media-part-size');
+            if (!box) return;
+
+            const sizeMb = sizeSel ? parseInt(sizeSel.value, 10) : 8;
+            box.classList.remove('dd-hidden');
+            box.innerHTML = '묶음을 계산하는 중...';
+
+            try {
+                const res = await apiFetch({ path: API_BASE + '/backup/media-parts?size_mb=' + sizeMb });
+
+                if (!res.total_parts) {
+                    box.innerHTML = '이 사이트에는 옮길 이미지가 없습니다.';
+                    return;
+                }
+
+                let html = `이미지 ${res.total_files}개 (${escapeHtml(res.total_human)}) → `
+                    + `<strong>${res.total_parts}개 묶음</strong><br>`
+                    + '<span class="dd-help-text">아래 순서대로 받아서, 하나씩 [데이터 복원]에 올리면 됩니다. '
+                    + '콘텐츠는 이미 있으므로 전부 건너뛰고 이미지만 채워집니다.</span>'
+                    + '<div class="dd-media-parts">';
+
+                res.parts.forEach((p) => {
+                    html += '<a class="dd-btn dd-btn-sm dd-btn-outline" href="' + escapeHtml(p.url) + '">'
+                        + `${p.index}/${res.total_parts} 받기 (${escapeHtml(p.human)})</a>`;
+                });
+
+                html += '</div>';
+                box.innerHTML = html;
+            } catch (err) {
+                box.innerHTML = '묶음 목록을 만들지 못했습니다: ' + escapeHtml(describeError(err));
+            }
         }
 
         let lastDiagnosticsText = '';

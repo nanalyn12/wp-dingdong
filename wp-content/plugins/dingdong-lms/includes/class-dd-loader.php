@@ -13,6 +13,8 @@ class DD_Loader {
         add_action( 'admin_enqueue_scripts', array( __CLASS__, 'admin_assets' ) );
         // ZIP 전체 백업은 REST 가 아니라 admin-post 로 스트리밍한다 (대용량 대응).
         add_action( 'admin_post_dd_backup_archive', array( 'DD_Backup', 'handle_archive_download' ) );
+        // 이미지 묶음 나눠 받기 — 대용량 ZIP 업로드가 막히는 호스팅용 우회 경로.
+        add_action( 'admin_post_dd_backup_media_part', array( 'DD_Backup', 'handle_media_part_download' ) );
         add_action( 'http_api_curl', array( __CLASS__, 'fix_curl_timeout' ), 10, 3 );
     }
 

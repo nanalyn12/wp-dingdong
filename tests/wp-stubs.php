@@ -141,6 +141,17 @@ if ( ! function_exists( 'sanitize_textarea_field' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_upload_dir' ) ) {
+	/** 경로만 필요한 코드를 위한 최소 구현. 실제 업로드 처리는 검증하지 않는다. */
+	function wp_upload_dir( $time = null, $create_dir = true, $refresh_cache = false ) {
+		return array(
+			'basedir' => sys_get_temp_dir() . '/dd-test-uploads',
+			'baseurl' => 'http://example.test/wp-content/uploads',
+			'error'   => false,
+		);
+	}
+}
+
 if ( ! function_exists( 'sanitize_key' ) ) {
 	function sanitize_key( $key ) {
 		return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) $key ) );

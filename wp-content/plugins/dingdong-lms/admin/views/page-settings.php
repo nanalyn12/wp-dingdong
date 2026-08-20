@@ -206,6 +206,25 @@ if ( ! defined( 'ABSPATH' ) ) {
             <!-- 메시지는 이 카드 안에 띄운다. 페이지 맨 위 알림은 스크롤을 내리면 안 보인다. -->
             <div id="dd-backup-alert" class="dd-mt-2 dd-hidden"></div>
 
+            <div class="dd-info-box dd-mt-2">
+                <strong><?php echo esc_html( '이미지 묶음 나눠 받기' ); ?></strong><br>
+                <?php echo esc_html( '전체 백업(ZIP)이 너무 커서 복원 시 업로드가 막히는 호스팅을 위한 방법입니다. 이미지를 작은 묶음으로 나눠 받아 하나씩 복원하세요. FTP가 필요 없습니다.' ); ?>
+
+                <div class="dd-flex dd-gap-1 dd-mt-2">
+                    <select id="dd-media-part-size" class="dd-input" style="max-width:160px">
+                        <option value="2">2MB 씩</option>
+                        <option value="4">4MB 씩</option>
+                        <option value="8" selected>8MB 씩</option>
+                        <option value="16">16MB 씩</option>
+                    </select>
+                    <button type="button" class="dd-btn dd-btn-secondary" id="dd-btn-media-parts">
+                        <?php echo esc_html( '묶음 목록 만들기' ); ?>
+                    </button>
+                </div>
+
+                <div id="dd-media-parts-list" class="dd-mt-2 dd-hidden"></div>
+            </div>
+
             <div id="dd-backup-warnings" class="dd-mt-2 dd-hidden"></div>
 
             <p class="dd-help-text dd-mt-2" id="dd-backup-archive-note">

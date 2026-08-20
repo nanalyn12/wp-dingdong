@@ -237,6 +237,12 @@ class DD_Rest_API {
             'permission_callback' => $admin,
         ) );
 
+        register_rest_route( $ns, '/backup/media-parts', array(
+            'methods'             => 'GET',
+            'callback'            => array( __CLASS__, 'backup_media_parts' ),
+            'permission_callback' => $admin,
+        ) );
+
         // 진단 — FTP 없이 관리자 화면에서 오류 원인을 볼 수 있게 한다.
         register_rest_route( $ns, '/backup/diagnostics', array(
             array( 'methods' => 'GET',  'callback' => array( __CLASS__, 'backup_diagnostics' ), 'permission_callback' => $admin ),
@@ -1462,6 +1468,44 @@ class DD_Rest_API {
             'trashed'        => DD_Backup::trashed_count(),
             // 자동 안전 백업 폴더가 웹에서 열리는 서버인지 (nginx·IIS 는 .htaccess 무시)
             'backup_dir'     => DD_Backup::backup_dir_protection(),
+        ) );
+    }
+
+    /**
+     * 이미지를 조각 크기에 맞춰 나눈 목록과 각 묶음의 내려받기 주소.
+     *
+     * 대용량 ZIP 업로드가 막히는 호스팅에서 FTP 없이 이미지를 옮기기 위한 경로다.
+     */
+    public static function backup_media_parts( $request ) {
+        $size_mb    = absint( $request->get_param( 'size_mb' ) );
+        $size_mb    = $size_mb > 0 ? min( 64, $size_mb ) : 8;
+        $part_bytes = $size_mb * 1048576;
+
+        $parts = DD_Backup::media_parts( $part_bytes );
+        $total = count( $parts );
+
+        $items = array();
+        foreach ( $parts as $part ) {
+            $items[] = array(
+                'index' => $part['index'],
+                'files' => count( $part['files'] ),
+                'bytes' => $part['bytes'],
+                'human' => size_format( $part['bytes'] ),
+                'url'   => wp_nonce_url(
+                    admin_url( 'admin-post.php?action=dd_backup_media_part&part=' . $part['index'] . '&size=' . $part_bytes ),
+                    'dd_backup_archive'
+                ),
+            );
+        }
+
+        $media = DD_Backup::media_summary();
+
+        return rest_ensure_response( array(
+            'size_mb'     => $size_mb,
+            'total_parts' => $total,
+            'total_files' => $media['count'],
+            'total_human' => size_format( $media['bytes'] ),
+            'parts'       => $items,
         ) );
     }
 
