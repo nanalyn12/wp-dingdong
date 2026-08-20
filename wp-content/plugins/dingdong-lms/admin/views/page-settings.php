@@ -195,10 +195,17 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <?php echo esc_html( '데이터 백업 (JSON)' ); ?>
                 </button>
                 <a class="dd-btn dd-btn-secondary" id="dd-btn-backup-archive"
-                   href="<?php echo esc_url( wp_nonce_url(
-                       admin_url( 'admin-post.php?action=dd_backup_archive' ),
-                       'dd_backup_archive'
-                   ) ); ?>">
+                   href="<?php
+                       // wp_nonce_url() 은 결과를 esc_html() 해서 돌려주므로 이스케이프가
+                       // 두 번 겹친다. 원본 URL 을 만들고 esc_url() 로 한 번만 처리한다.
+                       echo esc_url( add_query_arg(
+                           array(
+                               'action'   => 'dd_backup_archive',
+                               '_wpnonce' => wp_create_nonce( 'dd_backup_archive' ),
+                           ),
+                           admin_url( 'admin-post.php' )
+                       ) );
+                   ?>">
                     <?php echo esc_html( '전체 백업 (ZIP · 이미지 포함)' ); ?>
                 </a>
             </div>

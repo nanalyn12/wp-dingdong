@@ -1491,9 +1491,19 @@ class DD_Rest_API {
                 'files' => count( $part['files'] ),
                 'bytes' => $part['bytes'],
                 'human' => size_format( $part['bytes'] ),
-                'url'   => wp_nonce_url(
-                    admin_url( 'admin-post.php?action=dd_backup_media_part&part=' . $part['index'] . '&size=' . $part_bytes ),
-                    'dd_backup_archive'
+                // ⚠️ wp_nonce_url() 을 쓰면 안 된다. 그 함수는 결과를 esc_html() 해서
+                //    돌려주므로(& → &amp;), 클라이언트가 HTML 속성용으로 한 번 더
+                //    이스케이프하면 &amp;amp; 가 되어 서버가 `_wpnonce` 대신
+                //    `amp;_wpnonce` 를 받는다 → "링크가 만료되었습니다".
+                //    여기서는 **원본 URL** 을 주고, 이스케이프는 출력하는 쪽에서 한 번만 한다.
+                'url'   => add_query_arg(
+                    array(
+                        'action'   => 'dd_backup_media_part',
+                        'part'     => $part['index'],
+                        'size'     => $part_bytes,
+                        '_wpnonce' => wp_create_nonce( 'dd_backup_archive' ),
+                    ),
+                    admin_url( 'admin-post.php' )
                 ),
             );
         }
