@@ -270,6 +270,12 @@ Claude Code의 `preview_start` / `__*_preview.html` 같은 별도 dev server는 
   · `pack_into_parts()` 는 **조각 크기보다 큰 파일도 반드시 포함**한다(혼자 한 묶음). 빼면 그 이미지는
     영영 옮겨지지 않는다.
   · 최소 조각 크기 강제는 `media_parts()` 가 한다. 순수 함수인 `pack_into_parts()` 에 정책을 넣지 말 것.
+  · **실사용 검증(2026-08-21, 카페24 + 개인 워드프레스)**: JSON 복원 + 8MB·16MB 묶음으로
+    로컬 Studio → 운영 사이트 이전 성공. 기본 권장은 8MB. 이 경로가 정식 이전 방법이다.
+- ⚠️ **`wp_nonce_url()` 이 만든 URL 을 클라이언트로 넘기지 말 것.** 이 함수는 결과를 `esc_html()`
+  해서 돌려주므로(`&` → `&amp;`), 받는 쪽이 HTML 속성용으로 한 번 더 이스케이프하면
+  `_wpnonce` 가 `amp;_wpnonce` 가 되어 **"링크가 만료되었습니다"** 가 뜬다.
+  `add_query_arg()` + `wp_create_nonce()` 로 원본 URL 을 만들고 출력할 때 한 번만 이스케이프한다.
 - ⚠️ `validate()` 에서 `empty()` 를 쓰지 말 것. PHP 의 `empty('0')` 은 true 라, 플러그인 버전이 "0" 인
   정상 백업을 거부한다. 문자열은 `(string) $v === ''` 로 판정한다.
 - **비개발자(교육자)가 FTP 없이 끝낼 수 있어야 한다.** "uploads 폴더를 FTP 로 복사하세요" 는 해결책이
